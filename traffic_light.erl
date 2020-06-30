@@ -24,7 +24,7 @@
   code_change/4,
   callback_mode/0
 ]).
-%Eventsss
+%Events
 -export([timeout/0,server_msg/0]).
 
 %States
