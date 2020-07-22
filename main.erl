@@ -71,7 +71,10 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
     bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight}) ->
   DC2=wxPaintDC:new(Panel),
   wxDC:clear(DC2),
-  wxDC:drawBitmap(DC2,BmpRmap,{0,0});
+  wxDC:drawBitmap(DC2,BmpRmap,{0,0}),
+
+DrawImage = wxClientDC:new(Panel),
+      wxDC:drawBitmap(DrawImage, BmpCar1, {70, 40});
   %paint(Panel,DC,BmpCoin,BmpCastle,BmpZombie,BmpStrongZombie,BmpSkeleton,BmpStrongSkeleton,BmpZombie_f,BmpStrongZombie_f,BmpSkeleton_f,BmpStrongSkeleton_f,BmpLeftWin, BmpRightWin,ets:first(?ets_name));
 
 handle_sync_event(_Event,_,State) ->
@@ -85,7 +88,7 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(Rmapc),
 
   Car1 = wxImage:new("car1.png"),
-  Car1c = wxImage:scale(Car1,100,70),
+  Car1c = wxImage:scale(Car1,37,22),
   BmpCar1 = wxBitmap:new(Car1c),
   wxImage:destroy(Car1),
   wxImage:destroy(Car1c),
