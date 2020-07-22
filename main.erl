@@ -16,14 +16,14 @@
 %  handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3, close/0, pass_soldier/2]).
 %-include("header.hrl").
 -export([start/0,init/1,handle_event/2,handle_sync_event/3]).
--define(max_x, 1536).
--define(max_y,1152 ).
+-define(max_x, 768).
+-define(max_y,576 ).
 -define(SERVER, ?MODULE).
 -record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,key}).
 %%%-------------------------------------------------------------------
 start() ->
   wx_object:start({local,?SERVER},?MODULE,[],[]).
-%
+
 init([]) ->
   % graphics
   WxServer = wx:new(),
