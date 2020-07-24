@@ -66,10 +66,10 @@ start() ->
   {stop, Reason :: term()} | ignore).
 init([]) ->
   ets:new(cars,[set,public,named_table]),
-  
- %Pid = spawn(cars,start,[1]),
- %io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
- %ets:insert(cars,{Pid,[{1200,120},left,r1]}),
+
+  %Pid = spawn(cars,start,[1]),
+  %io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
+  %ets:insert(cars,{Pid,[{1200,120},left,r1]}),
   ets:insert(cars,{1,[{160, 120},left,r1]}),
 
 %c(main).
@@ -79,44 +79,54 @@ init([]) ->
 %main:start().
 
   ets:new(junction,[set,public,named_table]),
-  ets:insert(junction,{{r1,a},[{1154,120}]}),
-  ets:insert(junction,{{r1,b},[{932,120}]}),
-  ets:insert(junction,{{r1,t},[{793,120}]}),
-  ets:insert(junction,{{r1,c},[{656,120}]}),
-  ets:insert(junction,{{r1,s},[{435,120}]}),
-  ets:insert(junction,{{r1,d},[{301,120}]}),
-  ets:insert(junction,{{r1,e},[{162,120}]}),
-  ets:insert(junction,{{r2,e},[{128,80}]}),
-  ets:insert(junction,{{r2,f},[{128,380}]}),
-  ets:insert(junction,{{r2,o},[{128,625}]}),
-  ets:insert(junction,{{r3,f},[{92,418}]}),
-  ets:insert(junction,{{r3,r},[{236,418}]}),
-  ets:insert(junction,{{r3,g},[{376,418}]}),
-  ets:insert(junction,{{r3,h},[{586,418}]}),
-  ets:insert(junction,{{r3,i},[{737,418}]}),
-  ets:insert(junction,{{r3,u},[{871,418}]}),
-  ets:insert(junction,{{r3,j},[{1088,418}]}),
-  ets:insert(junction,{{r4,l},[{625,819}]}),
-  ets:insert(junction,{{r4,m},[{625,692}]}),
-  ets:insert(junction,{{r4,h},[{625,476}]}),
-  ets:insert(junction,{{r4,c},[{625,121}]}),
-  ets:insert(junction,{{r5,k},[{1086,655}]}),
-  ets:insert(junction,{{r6,k},[{1122,700}]}),
-  ets:insert(junction,{{r6,j},[{1122,466}]}),
-  ets:insert(junction,{{r6,a},[{1122,183}]}),
-  ets:insert(junction,{{r7,l},[{663,787}]}),
-  ets:insert(junction,{{r8,d},[{266,180}]}),
-  ets:insert(junction,{{r9,o},[{92,655}]}),
-  ets:insert(junction,{{r9,n},[{367,655}]}),
-  ets:insert(junction,{{r9,m},[{586,655}]}),
-  ets:insert(junction,{{r10,i},[{763,379}]}),
-  ets:insert(junction,{{r12,p},[{902,621}]}),
-  ets:insert(junction,{{r12,q},[{902,756}]}),
-  ets:insert(junction,{{r14,n},[{407,709}]}),
-  ets:insert(junction,{{r14,g},[{407,474}]}),
-  ets:insert(junction,{{r18,b},[{902,82}]}),
 
-cars:start(1),
+  %ets:insert(junction,{{r1,a},[{1052,120}]}),
+  traffic_light:start({{r1,a},[{1052,120}]}),
+
+  traffic_light:start({{r1,b},[{932,120}]}),
+
+  ets:insert(junction,{{r1,t},[{793,120},nal]}),
+
+  traffic_light:start({{r1,c},[{656,120}]}),
+  ets:insert(junction,{{r1,s},[{435,120},nal]}),
+
+  traffic_light:start({{r1,d},[{301,120}]}),
+  traffic_light:start({{r1,e},[{162,120}]}),
+  traffic_light:start({{r2,e},[{128,80}]}),
+  traffic_light:start({{r2,f},[{128,380}]}),
+  traffic_light:start({{r2,o},[{128,625}]}),
+  traffic_light:start({{r3,f},[{92,418}]}),
+
+  ets:insert(junction,{{r3,r},[{236,418},nal]}),
+  traffic_light:start({{r3,g},[{376,418}]}),
+  traffic_light:start({{r3,h},[{586,418}]}),
+  traffic_light:start({{r3,i},[{737,418}]}),
+  ets:insert(junction,{{r3,u},[{871,418},nal]}),
+
+  traffic_light:start({{r3,j},[{1088,418}]}),
+  traffic_light:start({{r4,l},[{625,819}]}),
+  traffic_light:start({{r4,m},[{625,692}]}),
+  traffic_light:start({{r4,h},[{625,476}]}),
+  traffic_light:start({{r4,c},[{625,121}]}),
+  traffic_light:start({{r5,k},[{1086,655}]}),
+  traffic_light:start({{r6,k},[{1122,700}]}),
+  traffic_light:start({{r6,j},[{1122,466}]}),
+  traffic_light:start({{r6,a},[{1122,183}]}),
+  traffic_light:start({{r7,l},[{663,787}]}),
+  traffic_light:start({{r8,d},[{266,180}]}),
+  traffic_light:start({{r9,o},[{92,655}]}),
+  traffic_light:start({{r9,n},[{367,655}]}),
+  traffic_light:start({{r9,m},[{586,655}]}),
+  traffic_light:start({{r10,i},[{763,379}]}),
+  ets:insert(junction,{{r12,p},[{902,621},nal]}),
+
+  ets:insert(junction,{{r12,q},[{902,756},nal]}),
+
+  traffic_light:start({{r14,n},[{407,709}]}),
+  traffic_light:start({{r14,g},[{407,474}]}),
+  traffic_light:start({{r18,b},[{902,82}]}),
+
+  cars:start(1),
 
   {ok, #state{}}.
 

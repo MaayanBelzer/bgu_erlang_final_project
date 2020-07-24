@@ -26,7 +26,7 @@
 ]).
 
 %%Events
--export([close_to_car/1,close_to_junc/1,accident/1,slow_down/1,speed_up/1,turn/2,go_straight/1,bypass/1,far_from_car/1]).
+-export([close_to_car/1,close_to_junc/3,accident/1,slow_down/1,speed_up/1,turn/2,go_straight/1,bypass/1,far_from_car/1]).
 -export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,keepStraight/1]).
 
 %% States
@@ -78,7 +78,7 @@ init([]) ->
   SensorPid = spawn(sensors,close_to_car,[self(),ets:first(cars)]),
   SensorPid2= spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
 
-  
+
   {ok,drive_straight, #cars_state{},40}.
 
 
@@ -96,7 +96,7 @@ callback_mode() ->
 
 %% Events
 close_to_car(Pid) -> gen_statem:cast(?MODULE,{ctc,Pid}).
-close_to_junc(Pid) -> gen_statem:cast(?MODULE,{ctj,Pid}).
+close_to_junc(Pid,LightState,{X,Y}) -> gen_statem:cast(?MODULE,{ctj,Pid,LightState,{X,Y}}).
 accident(Pid) -> gen_statem:cast(?MODULE,{acc,Pid}).
 slow_down(Pid) -> gen_statem:cast(?MODULE,{slow,Pid}).
 speed_up(Pid) -> gen_statem:cast(?MODULE,{speed,Pid}).
@@ -160,8 +160,11 @@ drive_straight(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-drive_straight(cast,{ctj,Pid},State = #cars_state{}) ->
+drive_straight(cast,{ctj,Pid,green,{X,Y}},State = #cars_state{}) ->
   % TODO: slow down, send message to server and stop\keep going according to traffic light
+  %server:s_light(Pid,)
+
+
   NextStateName = idle,
   {next_state, NextStateName, State};
 drive_straight(cast,{acc,Pid},State = #cars_state{}) ->
@@ -181,7 +184,7 @@ drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
   {next_state, NextStateName, State,40};
 drive_straight(timeout,40,State = #cars_state{}) ->
   % TODO: keep straight
- [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
   if
     D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
     D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
