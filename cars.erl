@@ -26,8 +26,8 @@
 ]).
 
 %%Events
--export([close_to_car/0,close_to_junc/0,accident/0,slow_down/0,speed_up/0,turn/1,go_straight/0,bypass/0,far_from_car/0]).
--export([max_speed/0,finish_turn/0,green_light/1,f_bypass/0,keepStraight/0]).
+-export([close_to_car/1,close_to_junc/1,accident/1,slow_down/1,speed_up/1,turn/2,go_straight/1,bypass/1,far_from_car/1]).
+-export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,keepStraight/1]).
 
 %% States
 -export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,turn_after_stop/3,stop/3,bypassing/3,start/1]).
@@ -74,6 +74,11 @@ start(Type) ->
 %%--------------------------------------------------------------------
 init([]) ->
   %%----------------process_flag??
+  ets:insert(cars,{self(),[{1200,120},left,r1]}),
+  SensorPid = spawn(sensors,close_to_car,[self(),ets:first(cars)]),
+  SensorPid2= spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
+
+  
   {ok,drive_straight, #cars_state{},40}.
 
 
@@ -90,23 +95,23 @@ callback_mode() ->
   state_functions.
 
 %% Events
-close_to_car() -> gen_statem:cast(?MODULE,{ctc}).
-close_to_junc() -> gen_statem:cast(?MODULE,{ctj}).
-accident() -> gen_statem:cast(?MODULE,{acc}).
-slow_down() -> gen_statem:cast(?MODULE,{slow}).
-speed_up() -> gen_statem:cast(?MODULE,{speed}).
-turn(left) -> gen_statem:cast(?MODULE,{turnL});
-turn(right) -> gen_statem:cast(?MODULE,{turnR}).
-go_straight() -> gen_statem:cast(?MODULE,{str8}).
-bypass() -> gen_statem:cast(?MODULE,{byp}).
-f_bypass() -> gen_statem:cast(?MODULE,{fByp}).
-far_from_car() -> gen_statem:cast(?MODULE,{far}).
-max_speed() -> gen_statem:cast(?MODULE,{maxS}).
-finish_turn() -> gen_statem:cast(?MODULE,{fTurn}).
-green_light(straight) -> gen_statem:cast(?MODULE,{greenS});
-green_light(left) -> gen_statem:cast(?MODULE,{greenL});
-green_light(right) -> gen_statem:cast(?MODULE,{greenR}).
-keepStraight() -> gen_statem:cast(?MODULE,{kst}).
+close_to_car(Pid) -> gen_statem:cast(?MODULE,{ctc,Pid}).
+close_to_junc(Pid) -> gen_statem:cast(?MODULE,{ctj,Pid}).
+accident(Pid) -> gen_statem:cast(?MODULE,{acc,Pid}).
+slow_down(Pid) -> gen_statem:cast(?MODULE,{slow,Pid}).
+speed_up(Pid) -> gen_statem:cast(?MODULE,{speed,Pid}).
+turn(Pid,left) -> gen_statem:cast(?MODULE,{turnL,Pid});
+turn(Pid,right) -> gen_statem:cast(?MODULE,{turnR,Pid}).
+go_straight(Pid) -> gen_statem:cast(?MODULE,{str8,Pid}).
+bypass(Pid) -> gen_statem:cast(?MODULE,{byp,Pid}).
+f_bypass(Pid) -> gen_statem:cast(?MODULE,{fByp,Pid}).
+far_from_car(Pid) -> gen_statem:cast(?MODULE,{far,Pid}).
+max_speed(Pid) -> gen_statem:cast(?MODULE,{maxS,Pid}).
+finish_turn(Pid) -> gen_statem:cast(?MODULE,{fTurn,Pid}).
+green_light(Pid,straight) -> gen_statem:cast(?MODULE,{greenS,Pid});
+green_light(Pid,left) -> gen_statem:cast(?MODULE,{greenL,Pid});
+green_light(Pid,right) -> gen_statem:cast(?MODULE,{greenR,Pid}).
+keepStraight(Pid) -> gen_statem:cast(?MODULE,{kst,Pid}).
 
 
 %%--------------------------------------------------------------------
@@ -151,90 +156,90 @@ state_name(_EventType, _EventContent, State) ->
   {next_state, NextStateName, State}.
 
 
-drive_straight(cast,{ctc},State = #cars_state{}) ->
+drive_straight(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-drive_straight(cast,{ctj},State = #cars_state{}) ->
+drive_straight(cast,{ctj,Pid},State = #cars_state{}) ->
   % TODO: slow down, send message to server and stop\keep going according to traffic light
   NextStateName = idle,
   {next_state, NextStateName, State};
-drive_straight(cast,{acc},State = #cars_state{}) ->
+drive_straight(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-drive_straight(cast,{kst},State = #cars_state{}) ->
+drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
   % TODO: keep straight
-  [{P,[{X,Y},D]}] = ets:lookup(cars,self()),
+  [{_,[{X,Y},D,R]}] = ets:lookup(cars,Pid),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D]}])
+    D == up -> ets:update_element(cars,Pid,[{2,[{X,Y -1 },D,R]}]) ;
+    D == down ->ets:update_element(cars,Pid,[{2,[{X,Y +1 },D,R]}]) ;
+    D == right ->ets:update_element(cars,Pid,[{2,[{X + 1,Y },D,R]}]) ;
+    true -> ets:update_element(cars,Pid,[{2,[{X - 1,Y},D,R]}])
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,40};
 drive_straight(timeout,40,State = #cars_state{}) ->
   % TODO: keep straight
-  [{P,[{X,Y},D]}] = ets:lookup(cars,self()),
+ [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D]}])
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,40}.
 
-idle(cast,{slow},State = #cars_state{}) ->
+idle(cast,{slow,Pid},State = #cars_state{}) ->
   % TODO: slow down
   NextStateName = slowing,
   {next_state, NextStateName, State};
-idle(cast,{speed},State = #cars_state{}) ->
+idle(cast,{speed,Pid},State = #cars_state{}) ->
   % TODO: accelerate
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-idle(cast,{turnL},State = #cars_state{}) ->
+idle(cast,{turnL,Pid},State = #cars_state{}) ->
   % TODO: start turning left
   NextStateName = turning,
   {next_state, NextStateName, State};
-idle(cast,{turnR},State = #cars_state{}) ->
+idle(cast,{turnR,Pid},State = #cars_state{}) ->
   % TODO: start turning right
   NextStateName = turning,
   {next_state, NextStateName, State};
-idle(cast,{str8},State = #cars_state{}) ->
+idle(cast,{str8,Pid},State = #cars_state{}) ->
   % TODO: go straight
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-idle(cast,{byp},State = #cars_state{}) ->
+idle(cast,{byp,Pid},State = #cars_state{}) ->
   % TODO: start bypassing
   NextStateName = bypassing,
   {next_state, NextStateName, State};
-idle(cast,{acc},State = #cars_state{}) ->
+idle(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-slowing(cast,{ctc},State = #cars_state{}) ->
+slowing(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-slowing(cast,{ctj},State = #cars_state{}) ->
+slowing(cast,{ctj,Pid},State = #cars_state{}) ->
   % TODO: slow down, send message to server and stop\keep going according to traffic light
   NextStateName = idle,
   {next_state, NextStateName, State};
-slowing(cast,{far},State = #cars_state{}) ->
+slowing(cast,{far,Pid},State = #cars_state{}) ->
   % TODO: start accelerating
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-slowing(cast,{acc},State = #cars_state{}) ->
+slowing(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-accelerating(cast,{ctc},State = #cars_state{}) ->
+accelerating(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: stop accelerating and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-accelerating(cast,{ctj},State = #cars_state{}) ->
+accelerating(cast,{ctj,Pid},State = #cars_state{}) ->
   % TODO: slow down, send message to server and stop\keep going according to traffic light
   NextStateName = idle,
   {next_state, NextStateName, State};
@@ -242,67 +247,67 @@ accelerating(cast,{maxS},State = #cars_state{}) ->
   % TODO: stop accelerating
   NextStateName = drive_straight,
   {next_state, NextStateName, State};
-accelerating(cast,{acc},State = #cars_state{}) ->
+accelerating(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-turning(cast,{ctc},State = #cars_state{}) ->
+turning(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-turning(cast,{fTurn},State = #cars_state{}) ->
+turning(cast,{fTurn,Pid},State = #cars_state{}) ->
   % TODO: start accelerating
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-turning(cast,{acc},State = #cars_state{}) ->
+turning(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-turn_after_stop(cast,{acc},State = #cars_state{}) ->
+turn_after_stop(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-turn_after_stop(cast,{fTurn},State = #cars_state{}) ->
+turn_after_stop(cast,{fTurn,Pid},State = #cars_state{}) ->
   % TODO: start accelerating
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-turn_after_stop(cast,{acc},State = #cars_state{}) ->
+turn_after_stop(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-stop(cast,{greenS},State = #cars_state{}) ->
+stop(cast,{greenS,Pid},State = #cars_state{}) ->
   % TODO: accelerate
   NextStateName = accelerating,
   {next_state, NextStateName, State};
-stop(cast,{greenL},State = #cars_state{}) ->
+stop(cast,{greenL,Pid},State = #cars_state{}) ->
   % TODO: start accelerating and turning left
   NextStateName = turn_after_stop,
   {next_state, NextStateName, State};
-stop(cast,{greenR},State = #cars_state{}) ->
+stop(cast,{greenR,Pid},State = #cars_state{}) ->
   % TODO: start accelerating and turning right
   NextStateName = turn_after_stop,
   {next_state, NextStateName, State};
-stop(cast,{far},State = #cars_state{}) ->
+stop(cast,{far,Pid},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-stop(cast,{acc},State = #cars_state{}) ->
+stop(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.
-bypassing(cast,{ctc},State = #cars_state{}) ->
+bypassing(cast,{ctc,Pid},State = #cars_state{}) ->
   % TODO: slow down and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-bypassing(cast,{ctj},State = #cars_state{}) ->
+bypassing(cast,{ctj,Pid},State = #cars_state{}) ->
   % TODO: slow down, send message to server and stop\keep going according to traffic light
   NextStateName = idle,
   {next_state, NextStateName, State};
-bypassing(cast,{fByp},State = #cars_state{}) ->
+bypassing(cast,{fByp,Pid},State = #cars_state{}) ->
   % TODO: return to right lane and drive straight
   NextStateName = drive_straight,
   {next_state, NextStateName, State};
-bypassing(cast,{acc},State = #cars_state{}) ->
+bypassing(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State}.

@@ -54,7 +54,7 @@ init([]) ->
 %  erlang:send_after(?money_timer, self(), money),
 
   {ok,Pi} = server:start(),
-  
+
 
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
@@ -142,8 +142,8 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DrawTrafficO1, BmpTrafficLight, {75, 575}),
   DrawTrafficO2 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
- 
-  [{_,[{A,B},_]}] = ets:lookup(cars,ets:first(cars)),
+
+  [{_,[{A,B},_,_]}] = ets:lookup(cars,ets:first(cars)),
 %K = ets:lookup(cars,ets:first(cars)),
 %io:format("~p~n",[K]);
   DI =wxClientDC:new(Panel),
