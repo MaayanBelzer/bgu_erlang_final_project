@@ -23,7 +23,7 @@
   code_change/3]).
 
 % gen_server events
--export([s_accident/2,s_close_to_car/2,s_fallen_car/1,s_into_range/1,s_light/2,s_out_of_range/1]).
+-export([s_accident/2,s_close_to_car/2,s_fallen_car/1,s_into_range/1,s_light/2,s_out_of_range/1,start/0]).
 
 -define(SERVER, ?MODULE).
 
@@ -42,6 +42,8 @@
 -spec(start_link() ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
@@ -63,6 +65,9 @@ start_link() ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
+  ets:new(cars,[set,public,named_table]),
+  {ok,Pid} = cars:start(1),
+  ets:insert(cars,{Pid,[{1200,120},left]}),
   {ok, #state{}}.
 
 %% Events

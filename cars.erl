@@ -27,10 +27,10 @@
 
 %%Events
 -export([close_to_car/0,close_to_junc/0,accident/0,slow_down/0,speed_up/0,turn/1,go_straight/0,bypass/0,far_from_car/0]).
--export([max_speed/0,finish_turn/0,green_light/1,f_bypass/0]).
+-export([max_speed/0,finish_turn/0,green_light/1,f_bypass/0,keepStraight/0]).
 
 %% States
--export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,turn_after_stop/3,stop/3,bypassing/3]).
+-export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,turn_after_stop/3,stop/3,bypassing/3,start/1]).
 
 
 -define(SERVER, ?MODULE).
@@ -52,6 +52,8 @@
 %%--------------------------------------------------------------------
 start_link() ->
   gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Type) ->
+  gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_statem callbacks
@@ -72,13 +74,13 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
   %%----------------process_flag??
-  {ok,drive_straight, #cars_state{}}.
+  {ok,drive_straight, #cars_state{},40}.
 
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% This function is called by a gen_statem when it needs to find out 
+%% This function is called by a gen_statem when it needs to find out
 %% the callback mode of the callback module.
 %%
 %% @spec callback_mode() -> atom().
@@ -104,6 +106,7 @@ finish_turn() -> gen_statem:cast(?MODULE,{fTurn}).
 green_light(straight) -> gen_statem:cast(?MODULE,{greenS});
 green_light(left) -> gen_statem:cast(?MODULE,{greenL});
 green_light(right) -> gen_statem:cast(?MODULE,{greenR}).
+keepStraight() -> gen_statem:cast(?MODULE,{kst}).
 
 
 %%--------------------------------------------------------------------
@@ -147,6 +150,7 @@ state_name(_EventType, _EventContent, State) ->
   NextStateName = next_state,
   {next_state, NextStateName, State}.
 
+
 drive_straight(cast,{ctc},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
@@ -158,7 +162,30 @@ drive_straight(cast,{ctj},State = #cars_state{}) ->
 drive_straight(cast,{acc},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
-  {next_state, NextStateName, State}.
+  {next_state, NextStateName, State};
+drive_straight(cast,{kst},State = #cars_state{}) ->
+  % TODO: keep straight
+  [{P,[{X,Y},D]}] = ets:lookup(cars,self()),
+  if
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D]}])
+  end,
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,40};
+drive_straight(timeout,40,State = #cars_state{}) ->
+  % TODO: keep straight
+  [{P,[{X,Y},D]}] = ets:lookup(cars,self()),
+  if
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D]}])
+  end,
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,40}.
+
 idle(cast,{slow},State = #cars_state{}) ->
   % TODO: slow down
   NextStateName = slowing,
