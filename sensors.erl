@@ -60,19 +60,19 @@ close_to_junction(Pid,FirstKey) ->  [{_,[{X,Y},Dir1,R1]}] = ets:lookup(cars,Pid)
     false -> close_to_junction(Pid,ets:next(junction,FirstKey));
     _ -> case Dir1 of
            left -> D = X-X2, if
-                               D =< 120 , D >= 0-> cars:close_to_junc(Pid);
+                               D =< 60 , D >= 0-> cars:close_to_junc(Pid);
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                              end;
            right -> D = X2-X, if
-                                D =< 120 , D >= 0-> cars:close_to_junc(Pid);
+                                D =< 60 , D >= 0-> cars:close_to_junc(Pid);
                                 true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                               end;
            up -> D = Y-Y2, if
-                             D =< 120 , D >= 0-> cars:close_to_junc(Pid);
+                             D =< 60 , D >= 0-> cars:close_to_junc(Pid);
                              true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                            end;
            down -> D = Y2-Y, if
-                               D =< 120 , D >= 0-> cars:close_to_junc(Pid);
+                               D =< 60 , D >= 0-> cars:close_to_junc(Pid);
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                              end
 

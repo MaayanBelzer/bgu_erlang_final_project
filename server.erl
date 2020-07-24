@@ -79,7 +79,7 @@ init([]) ->
 %main:start().
 
   ets:new(junction,[set,public,named_table]),
-  ets:insert(junction,{{r1,a},[{1052,120}]}),
+  ets:insert(junction,{{r1,a},[{1154,120}]}),
   ets:insert(junction,{{r1,b},[{932,120}]}),
   ets:insert(junction,{{r1,t},[{793,120}]}),
   ets:insert(junction,{{r1,c},[{656,120}]}),
