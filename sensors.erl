@@ -21,28 +21,28 @@ close_to_car(Pid,FirstKey) -> [{_,[{X,Y},Dir1,_]}] = ets:lookup(cars,Pid),
             left -> case Y==Y2 of
                       false -> close_to_car(Pid,ets:next(cars,P2));
                       _ -> D = X-X2, if
-                                       D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid);
+                                       D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2);
                                        true -> close_to_car(Pid,ets:next(cars,P2))
                                      end
                     end;
             right -> case Y==Y2 of
                        false -> close_to_car(Pid,ets:next(cars,P2));
                        _ -> D = X2-X, if
-                                        D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid);
+                                        D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2);
                                         true -> close_to_car(Pid,ets:next(cars,P2))
                                       end
                      end;
             up -> case X==X2 of
                     false -> close_to_car(Pid,ets:next(cars,P2));
                     _ -> D = Y-Y2, if
-                                     D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid);
+                                     D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2);
                                      true -> close_to_car(Pid,ets:next(cars,P2))
                                    end
                   end;
             down -> case X==X2 of
                       false -> close_to_car(Pid,ets:next(cars,P2));
                       _ -> D = Y2-Y, if
-                                       D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid);
+                                       D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2);
                                        true -> close_to_car(Pid,ets:next(cars,P2))
                                      end
                     end
@@ -60,31 +60,31 @@ close_to_junction(Pid,FirstKey) ->  [{_,[{X,Y},Dir1,R1]}] = ets:lookup(cars,Pid)
     false -> close_to_junction(Pid,ets:next(junction,FirstKey));
     _ -> case Dir1 of
            left -> D = X-X2, if
-                               D =< 120 , D >= 0-> case LightPid of
-                                                     nal -> cars:close_to_junc(Pid,green,{X2,Y2});
-                                                     LP -> cars:close_to_junc(Pid,sys:get_state(LP),{X2,Y2})
-                                                   end;
+                               D =< 60 , D >= 0-> case LightPid of
+                                                    nal -> cars:close_to_junc(Pid,green,FirstKey);
+                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey)
+                                                  end;
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                              end;
            right -> D = X2-X, if
-                                D =< 120 , D >= 0-> case LightPid of
-                                                      nal -> cars:close_to_junc(Pid,green,{X2,Y2});
-                                                      LP -> cars:close_to_junc(Pid,sys:get_state(LP),{X2,Y2})
-                                                    end;
+                                D =< 60 , D >= 0-> case LightPid of
+                                                     nal -> cars:close_to_junc(Pid,green,FirstKey);
+                                                     LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey)
+                                                   end;
                                 true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                               end;
            up -> D = Y-Y2, if
-                             D =< 120 , D >= 0-> case LightPid of
-                                                   nal -> cars:close_to_junc(Pid,green,{X2,Y2});
-                                                   LP -> cars:close_to_junc(Pid,sys:get_state(LP),{X2,Y2})
-                                                 end;
+                             D =< 60 , D >= 0-> case LightPid of
+                                                  nal -> cars:close_to_junc(Pid,green,FirstKey);
+                                                  LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey)
+                                                end;
                              true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                            end;
            down -> D = Y2-Y, if
-                               D =< 120 , D >= 0-> case LightPid of
-                                                     nal -> cars:close_to_junc(Pid,green,{X2,Y2});
-                                                     LP -> cars:close_to_junc(Pid,sys:get_state(LP),{X2,Y2})
-                                                   end;
+                               D =< 60 , D >= 0-> case LightPid of
+                                                    nal -> cars:close_to_junc(Pid,green,FirstKey);
+                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey)
+                                                  end;
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                              end
 

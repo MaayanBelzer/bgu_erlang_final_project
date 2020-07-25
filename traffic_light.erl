@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author maaya
+%%% @author maayan
 %%% @copyright (C) 2020, <COMPANY>
 %%% @doc
 %%%
@@ -7,12 +7,12 @@
 %%% Created : 30. יוני 2020 17:58
 %%%-------------------------------------------------------------------
 -module(traffic_light).
--author("maaya").
+-author("maayan").
 
 -behaviour(gen_statem).
 
 %% API
--export([start_link/0,start/1]).
+-export([start_link/0,start/2]).
 
 %% gen_statem callbacks
 -export([init/1, format_status/2, state_name/3, handle_event/4, terminate/3,
@@ -37,8 +37,8 @@
 %% function does not return until Module:init/1 has returned.
 start_link() ->
   gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
-start({{R,J},[{X,Y}]}) ->
-  gen_statem:start_link({local, ?SERVER}, ?MODULE, {{R,J},[{X,Y}]}, []).
+start(Name,{{R,J},[{X,Y}]}) ->
+  gen_statem:start({local,Name}, ?MODULE, {{R,J},[{X,Y}]}, []).
 
 %%%===================================================================
 %%% gen_statem callbacks

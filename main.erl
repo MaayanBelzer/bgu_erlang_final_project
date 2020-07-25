@@ -143,12 +143,15 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   DrawTrafficO2 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
 
-  [{_,[{A,B},_,_]}] = ets:lookup(cars,ets:first(cars)),
+  [{K,[{A,B},_,_]}] = ets:lookup(cars,ets:first(cars)),
 %K = ets:lookup(cars,ets:first(cars)),
 %io:format("~p~n",[K]);
   DI =wxClientDC:new(Panel),
-  wxDC:drawBitmap(DI, BmpCar1, {A, B});
+  wxDC:drawBitmap(DI, BmpCar1, {A, B}),
 
+  [{_,[{A2,B2},_,_]}] = ets:lookup(cars,ets:next(cars,K)),
+  DI2 =wxClientDC:new(Panel),
+  wxDC:drawBitmap(DI2, BmpCar1, {A2, B2});
 
 
 %paint(Panel,DC,BmpCoin,BmpCastle,BmpZombie,BmpStrongZombie,BmpSkeleton,BmpStrongSkeleton,BmpZombie_f,BmpStrongZombie_f,BmpSkeleton_f,BmpStrongSkeleton_f,BmpLeftWin, BmpRightWin,ets:first(?ets_name));
