@@ -186,17 +186,6 @@ drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)};
-drive_straight(timeout,40,State = #cars_state{}) ->
-  % TODO: keep straight
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
-  if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
-  end,
-  NextStateName = drive_straight,
-  {next_state, NextStateName, State,40};
 drive_straight(timeout,20,State = #cars_state{}) ->
   % TODO: keep straight
   [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
@@ -208,6 +197,17 @@ drive_straight(timeout,20,State = #cars_state{}) ->
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,20};
+drive_straight(timeout,10,State = #cars_state{}) ->
+  % TODO: keep straight
+  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  if
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+  end,
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,10};
 drive_straight(cast,{stop,Pid},State = #cars_state{}) ->
   % TODO: stop
   NextStateName = stopping,
@@ -241,16 +241,6 @@ idle(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-idle(timeout,40,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
-  if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
-  end,
-  NextStateName = idle,
-  {next_state, NextStateName, State,40};
 idle(timeout,20,State = #cars_state{}) ->
   [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
   if
@@ -261,6 +251,16 @@ idle(timeout,20,State = #cars_state{}) ->
   end,
   NextStateName = idle,
   {next_state, NextStateName, State,20};
+idle(timeout,10,State = #cars_state{}) ->
+  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  if
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+  end,
+  NextStateName = idle,
+  {next_state, NextStateName, State,10};
 idle(cast,_,State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)}.
@@ -350,7 +350,7 @@ bypassing(cast,{ctj,Pid},State = #cars_state{}) ->
   {next_state, NextStateName, State};
 bypassing(cast,{fByp,Pid},State = #cars_state{}) ->
   % TODO: return to right lane and drive straight
- 
+
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)};
 bypassing(cast,{acc,Pid},State = #cars_state{}) ->
@@ -361,7 +361,7 @@ bypassing(cast,{acc,Pid},State = #cars_state{}) ->
 
 
 
-bypassing(timeout,40,State = #cars_state{}) ->
+bypassing(timeout,20,State = #cars_state{}) ->
   [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
     D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R]}]) ;
@@ -380,10 +380,10 @@ bypassing(timeout,40,State = #cars_state{}) ->
     true -> ets:update_element(cars,P,[{2,[{X - 1,Y + 1},D,R]}])
   end,
   NextStateName = bypassing,
-  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},40};
+  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},20};
 
 
-bypassing(timeout,20,State = #cars_state{}) ->
+bypassing(timeout,10,State = #cars_state{}) ->
   [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
     D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R]}]) ;
@@ -416,7 +416,7 @@ bypassing(timeout,20,State = #cars_state{}) ->
     true -> server:car_finish_bypass(self())
   end,
   NextStateName = bypassing,
-  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},20}.
+  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},10}.
 
 
 %%--------------------------------------------------------------------

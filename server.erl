@@ -82,45 +82,45 @@ init([]) ->
   ets:new(junction,[set,public,named_table]),
 
 
- % traffic_light:start(r1a,{{r1,a},[{1052,120}]}),
- % traffic_light:start(r1b,{{r1,b},[{932,120}]}),
- % ets:insert(junction,{{r1,t},[{793,120},nal]}),
- % traffic_light:start(r1c,{{r1,c},[{656,120}]}),
- % ets:insert(junction,{{r1,s},[{435,120},nal]}),
- % traffic_light:start(r1d,{{r1,d},[{301,120}]}),
- % traffic_light:start(r1e,{{r1,e},[{162,120}]}),
- % traffic_light:start(r2e,{{r2,e},[{128,80}]}),
- % traffic_light:start(r2f,{{r2,f},[{128,380}]}),
- % traffic_light:start(r2o,{{r2,o},[{128,625}]}),
- % traffic_light:start(r3f,{{r3,f},[{92,418}]}),
- % ets:insert(junction,{{r3,r},[{236,418},nal]}),
- % traffic_light:start(r3g,{{r3,g},[{376,418}]}),
- % traffic_light:start(r3h,{{r3,h},[{586,418}]}),
- % traffic_light:start(r3i,{{r3,i},[{737,418}]}),
- % ets:insert(junction,{{r3,u},[{871,418},nal]}),
- % traffic_light:start(r3j,{{r3,j},[{1088,418}]}),
- % traffic_light:start(r4l,{{r4,l},[{625,819}]}),
- % traffic_light:start(r4m,{{r4,m},[{625,692}]}),
- % traffic_light:start(r4h,{{r4,h},[{625,476}]}),
- % traffic_light:start(r4c,{{r4,c},[{625,121}]}),
- % traffic_light:start(r5k,{{r5,k},[{1086,655}]}),
- % traffic_light:start(r6k,{{r6,k},[{1122,700}]}),
- % traffic_light:start(r6j,{{r6,j},[{1122,466}]}),
- % traffic_light:start(r6a,{{r6,a},[{1122,183}]}),
- % traffic_light:start(r7l,{{r7,l},[{663,787}]}),
- % traffic_light:start(r8d,{{r8,d},[{266,180}]}),
- % traffic_light:start(r9o,{{r9,o},[{92,655}]}),
- % traffic_light:start(r9n,{{r9,n},[{367,655}]}),
- % traffic_light:start(r9m,{{r9,m},[{586,655}]}),
- % traffic_light:start(r10i,{{r10,i},[{763,379}]}),
- % ets:insert(junction,{{r12,p},[{902,621},nal]}),
- % ets:insert(junction,{{r12,q},[{902,756},nal]}),
- % traffic_light:start(r14n,{{r14,n},[{407,709}]}),
- % traffic_light:start(r14g,{{r14,g},[{407,474}]}),
- % traffic_light:start(r18b,{{r18,b},[{902,82}]}),
+  % traffic_light:start(r1a,{{r1,a},[{1052,120}]}),
+  % traffic_light:start(r1b,{{r1,b},[{932,120}]}),
+  % ets:insert(junction,{{r1,t},[{793,120},nal]}),
+  % traffic_light:start(r1c,{{r1,c},[{656,120}]}),
+  % ets:insert(junction,{{r1,s},[{435,120},nal]}),
+  % traffic_light:start(r1d,{{r1,d},[{301,120}]}),
+  % traffic_light:start(r1e,{{r1,e},[{162,120}]}),
+  % traffic_light:start(r2e,{{r2,e},[{128,80}]}),
+  % traffic_light:start(r2f,{{r2,f},[{128,380}]}),
+  % traffic_light:start(r2o,{{r2,o},[{128,625}]}),
+  % traffic_light:start(r3f,{{r3,f},[{92,418}]}),
+  % ets:insert(junction,{{r3,r},[{236,418},nal]}),
+  % traffic_light:start(r3g,{{r3,g},[{376,418}]}),
+  % traffic_light:start(r3h,{{r3,h},[{586,418}]}),
+  % traffic_light:start(r3i,{{r3,i},[{737,418}]}),
+  % ets:insert(junction,{{r3,u},[{871,418},nal]}),
+  % traffic_light:start(r3j,{{r3,j},[{1088,418}]}),
+  % traffic_light:start(r4l,{{r4,l},[{625,819}]}),
+  % traffic_light:start(r4m,{{r4,m},[{625,692}]}),
+  % traffic_light:start(r4h,{{r4,h},[{625,476}]}),
+  % traffic_light:start(r4c,{{r4,c},[{625,121}]}),
+  % traffic_light:start(r5k,{{r5,k},[{1086,655}]}),
+  % traffic_light:start(r6k,{{r6,k},[{1122,700}]}),
+  % traffic_light:start(r6j,{{r6,j},[{1122,466}]}),
+  % traffic_light:start(r6a,{{r6,a},[{1122,183}]}),
+  % traffic_light:start(r7l,{{r7,l},[{663,787}]}),
+  % traffic_light:start(r8d,{{r8,d},[{266,180}]}),
+  % traffic_light:start(r9o,{{r9,o},[{92,655}]}),
+  % traffic_light:start(r9n,{{r9,n},[{367,655}]}),
+  % traffic_light:start(r9m,{{r9,m},[{586,655}]}),
+  % traffic_light:start(r10i,{{r10,i},[{763,379}]}),
+  % ets:insert(junction,{{r12,p},[{902,621},nal]}),
+  % ets:insert(junction,{{r12,q},[{902,756},nal]}),
+  % traffic_light:start(r14n,{{r14,n},[{407,709}]}),
+  % traffic_light:start(r14g,{{r14,g},[{407,474}]}),
+  % traffic_light:start(r18b,{{r18,b},[{902,82}]}),
 
-  cars:start(a,20,[{1200,93},left,r1]),
-  cars:start(b,40,[{1000,93},left,r1]),
+  cars:start(a,10,[{1200,93},left,r1]),
+  cars:start(b,20,[{1000,93},left,r1]),
 
   {ok, #state{}}.
 
@@ -169,14 +169,14 @@ handle_cast({light,Who,{R,J}}, State) -> % TODO: decide whether the car turns le
 
   {noreply, State};
 handle_cast({ctc,Who,OtherCar}, State) -> % TODO: decide whether the car slows down or bypasses the other car
-   Bool = checkBypass(Who,OtherCar,ets:first(cars)),
-case Bool of
-  true -> cars:bypass(Who);
-  _ -> case sys:get_state(OtherCar) of
-         stopping -> cars:stop(Who);
-         _ -> cars:slow_down(Who)
-       end
-end,
+  Bool = checkBypass(Who,OtherCar,ets:first(cars)),
+  case Bool of
+    true -> cars:bypass(Who);
+    _ -> case sys:get_state(OtherCar) of
+           stopping -> cars:stop(Who);
+           _ -> cars:slow_down(Who)
+         end
+  end,
 
   {noreply, State};
 handle_cast({fallen,Who}, State) -> % TODO: if car process has fallen with an error, bring it back up if possible
@@ -248,9 +248,9 @@ checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R]}] =  ets:lookup(cars,Wh
     R == R2, P2 /= Who, P2 /= OtherCar ->
       case Dir1 of
         left -> D = X-X2, if
-                                   D =< 200 , D >= 0 -> false;
-                                   true -> checkBypass(Who,OtherCar,ets:next(cars,P2))
-                                 end;
+                            D =< 200 , D >= 0 -> false;
+                            true -> checkBypass(Who,OtherCar,ets:next(cars,P2))
+                          end;
 
         right ->  D = X2-X, if
                               D =< 200 , D >= 0 -> false;
@@ -264,7 +264,7 @@ checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R]}] =  ets:lookup(cars,Wh
                             D =< 200 , D >= 0 -> false;
                             true -> checkBypass(Who,OtherCar,ets:next(cars,P2))
                           end
-        end;
+      end;
 
     true -> checkBypass(Who,OtherCar,ets:next(cars,FirstKey))
   end.
