@@ -80,10 +80,7 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DC2,BmpRmap,{0,0}),
 
 
-  DrawImage = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawImage, BmpCar1, {160, 93}),
-  DrawImage2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawImage2, BmpCar2, {160, 118}),
+  
   DrawTrafficA1 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficA1, BmpTrafficLight, {1130, 35}),
   DrawTrafficA2 = wxClientDC:new(Panel),
@@ -144,25 +141,33 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
 
 
-  % printCars(ets:first(cars),Panel,BmpCar1);
+   printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
 
 
-  [{_,[{A,B},D,_,Type,Turn]}] = ets:lookup(cars,ets:first(cars)),
+
+
+
+handle_sync_event(_Event,_,State) ->
+  {noreply, State}.
+
+printCars('$end_of_table',_,_,_,_) -> ok;
+printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
+  [{_,[{A,B},D,_,Type,Turn]}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Turn of
     st-> case Type of
-          red -> case D of
-                   left -> wxDC:drawBitmap(DI, BmpCar1, {A, B});
-                   down -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}),
-                     BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                   right -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
-                     BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                   up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
-                     BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-                 end;
-          grey -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
-          truck ->  wxDC:drawBitmap(DI, BmpTruck, {A, B})
-        end;
+           red -> case D of
+                    left -> wxDC:drawBitmap(DI, BmpCar1, {A, B});
+                    down -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                    right -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
+                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                    up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
+                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+                  end;
+           grey -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
+           truck ->  wxDC:drawBitmap(DI, BmpTruck, {A, B})
+         end;
     right -> case Type of
                red -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,0,{A,B}),
                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
@@ -180,27 +185,9 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
                 BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
             end
 
-  end;
-%  wxDC:drawBitmap(DI, BmpCar1, {A, B});
+  end,
+printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpTruck).
 
-% [{_,[{A2,B2},_,_]}] = ets:lookup(cars,ets:next(cars,K)),
-% DI2 =wxClientDC:new(Panel),
-% wxDC:drawBitmap(DI2, BmpCar1, {A2, B2});
-
-
-%paint(Panel,DC,BmpCoin,BmpCastle,BmpZombie,BmpStrongZombie,BmpSkeleton,BmpStrongSkeleton,BmpZombie_f,BmpStrongZombie_f,BmpSkeleton_f,BmpStrongSkeleton_f,BmpLeftWin, BmpRightWin,ets:first(?ets_name));
-
-
-
-handle_sync_event(_Event,_,State) ->
-  {noreply, State}.
-
-%printCars('$end_of_table',_,_) -> done;
-%printCars(Key,Panel,BmpCar1) ->
-%  [{_,[{A,B},_,_,Type,Turn]}] = ets:lookup(cars,Key),
-%  DI =wxClientDC:new(Panel),
-%  wxDC:drawBitmap(DI, BmpCar1, {A, B}),
-%  printCars(ets:next(cars,Key),Panel,BmpCar1).
 
 
 handle_info(timer, State=#state{frame = Frame}) ->                    % refresh screen for graphics

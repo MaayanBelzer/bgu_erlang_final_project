@@ -119,14 +119,14 @@ init([]) ->
   traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
   traffic_light:start(r18b,{{r18,b},[{902,70}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%cars:start(a,10,[{874,0},down,r18,red,st]),
-%cars:start(a,10,[{0,651},right,r9,red,st]),
-%cars:start(a,10,[{405,890},up,r14,red,st]),
-%cars:start(a,10,[{623,890},up,r4,red,st]),
-%cars:start(a,10,[{101,0},down,r2,red,st]),
-cars:start(a,10,[{1344,93},left,r1,red,st]),
-%cars:start(a,10,[{0,417},right,r3,red,st]),
-%cars:start(a,10,[{1117,890},up,r6,red,st]),
+cars:start(a,10,[{874,0},down,r18,red,st]),
+cars:start(b,10,[{0,651},right,r9,red,st]),
+cars:start(c,10,[{405,890},up,r14,red,st]),
+cars:start(d,10,[{623,890},up,r4,red,st]),
+cars:start(e,10,[{101,0},down,r2,red,st]),
+cars:start(f,10,[{1344,93},left,r1,red,st]),
+cars:start(g,10,[{0,417},right,r3,red,st]),
+cars:start(h,10,[{1117,890},up,r6,red,st]),
 
 
   roadGraph(),
