@@ -82,45 +82,52 @@ init([]) ->
   ets:new(junction,[set,public,named_table]),
 
 
-  %traffic_light:start(r1a,{{r1,a},[{1153,120}]}),
-  traffic_light:start(r1b,{{r1,b},[{938,120}]}),
-  ets:insert(junction,{{r1,t},[{799,120},nal]}),
-  traffic_light:start(r1c,{{r1,c},[{658,120}]}),
-  %ets:insert(junction,{{r1,s},[{442,120},nal]}),
-  traffic_light:start(r1d,{{r1,d},[{302,120}]}),
-  traffic_light:start(r1e,{{r1,e},[{164,120}]}),
-  traffic_light:start(r2e,{{r2,e},[{128,81}]}),
-  traffic_light:start(r2f,{{r2,f},[{128,381}]}),
-  traffic_light:start(r2o,{{r2,o},[{128,621}]}),
-  traffic_light:start(r3f,{{r3,f},[{92,418}]}),
-  ets:insert(junction,{{r3,r},[{232,418},nal]}),
-  traffic_light:start(r3g,{{r3,g},[{372,418}]}),
-  traffic_light:start(r3h,{{r3,h},[{589,418}]}),
-  traffic_light:start(r3i,{{r3,i},[{728,418}]}),
-  ets:insert(junction,{{r3,u},[{867,418},nal]}),
-  traffic_light:start(r3j,{{r3,j},[{1091,418}]}),
-  traffic_light:start(r4l,{{r4,l},[{625,820}]}),
-  traffic_light:start(r4m,{{r4,m},[{625,689}]}),
-  traffic_light:start(r4h,{{r4,h},[{625,457}]}),
-  traffic_light:start(r4c,{{r4,c},[{625,157}]}),
-  traffic_light:start(r5k,{{r5,k},[{1090,655}]}),
-  traffic_light:start(r6k,{{r6,k},[{1122,689}]}),
-  traffic_light:start(r6j,{{r6,j},[{1122,457}]}),
-  traffic_light:start(r6a,{{r6,a},[{1122,157}]}),
-  traffic_light:start(r7l,{{r7,l},[{659,787}]}),
-  traffic_light:start(r8d,{{r8,d},[{266,157}]}),
-  traffic_light:start(r9o,{{r9,o},[{93,655}]}),
-  traffic_light:start(r9n,{{r9,n},[{373,655}]}),
-  traffic_light:start(r9m,{{r9,m},[{590,655}]}),
-  traffic_light:start(r10i,{{r10,i},[{763,381}]}),
-  ets:insert(junction,{{r12,p},[{902,622},nal]}),
-  ets:insert(junction,{{r12,q},[{902,753},nal]}),
-  traffic_light:start(r14n,{{r14,n},[{407,689}]}),
-  traffic_light:start(r14g,{{r14,g},[{407,457}]}),
-  traffic_light:start(r18b,{{r18,b},[{902,81}]}),
+  traffic_light:start(r1a,{{r1,a},[{1137,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%5
+  traffic_light:start(r1b,{{r1,b},[{938,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  ets:insert(junction,{{r1,t},[{799,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r1c,{{r1,c},[{638,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  ets:insert(junction,{{r1,s},[{420,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r1d,{{r1,d},[{302,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r1e,{{r1,e},[{164,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r2e,{{r2,e},[{128,70}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  traffic_light:start(r2f,{{r2,f},[{128,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r2o,{{r2,o},[{128,590}]}),%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r3f,{{r3,f},[{78,418}]}),%%%%%%%%%%%%%%%%%%%%%%
+  ets:insert(junction,{{r3,r},[{204,418},nal]}),%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r3g,{{r3,g},[{372,418}]}),%%%%%%%%%%%%%%%%%%%%%5
+  traffic_light:start(r3h,{{r3,h},[{560,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  traffic_light:start(r3i,{{r3,i},[{728,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  ets:insert(junction,{{r3,u},[{860,418},nal]}),%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r3j,{{r3,j},[{1055,418}]}),%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r4l,{{r4,l},[{625,820}]}),%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r4m,{{r4,m},[{625,689}]}),%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r4h,{{r4,h},[{590,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r4c,{{r4,c},[{625,154}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r5k,{{r5,k},[{1058,640}]}),%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r6k,{{r6,k},[{1122,671}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r6j,{{r6,j},[{1122,434}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r6a,{{r6,a},[{1122,154}]}),%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r7l,{{r7,l},[{640,787}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r8d,{{r8,d},[{266,154}]}),%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r9o,{{r9,o},[{80,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r9n,{{r9,n},[{342,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  traffic_light:start(r9m,{{r9,m},[{560,655}]}),%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r10i,{{r10,i},[{763,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+  ets:insert(junction,{{r12,p},[{902,590},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%
+  ets:insert(junction,{{r12,q},[{902,745},nal]}),%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r14n,{{r14,n},[{407,670}]}),%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r18b,{{r18,b},[{902,70}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  cars:start(a,10,[{1200,93},left,r1,red,st]),
-%  cars:start(b,20,[{1000,93},left,r1]),
+%cars:start(a,10,[{874,0},down,r18,red,st]),
+%cars:start(a,10,[{0,651},right,r9,red,st]),
+%cars:start(a,10,[{405,890},up,r14,red,st]),
+%cars:start(a,10,[{623,890},up,r4,red,st]),
+%cars:start(a,10,[{101,0},down,r2,red,st]),
+cars:start(a,10,[{1344,93},left,r1,red,st]),
+%cars:start(a,10,[{0,417},right,r3,red,st]),
+%cars:start(a,10,[{1117,890},up,r6,red,st]),
+
 
   roadGraph(),
   {ok, #state{}}.
