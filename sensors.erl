@@ -13,8 +13,8 @@
 -export([close_to_car/2,close_to_junction/2]).
 
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
-close_to_car(Pid,FirstKey) -> [{_,[{X,Y},Dir1,_]}] = ets:lookup(cars,Pid),
-  [{P2,[{X2,Y2},Dir2,_]}] = ets:lookup(cars,FirstKey),
+close_to_car(Pid,FirstKey) -> [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Pid),
+  [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey),
   case Dir1 == Dir2 of
     false -> close_to_car(Pid,ets:next(cars,P2));
     _ ->  case Dir1 of
@@ -54,7 +54,7 @@ close_to_car(Pid,FirstKey) -> [{_,[{X,Y},Dir1,_]}] = ets:lookup(cars,Pid),
 
 
 close_to_junction(Pid,'$end_of_table') -> close_to_junction(Pid,ets:first(junction));
-close_to_junction(Pid,FirstKey) ->  [{_,[{X,Y},Dir1,R1]}] = ets:lookup(cars,Pid),
+close_to_junction(Pid,FirstKey) ->  [{_,[{X,Y},Dir1,R1,_,_]}] = ets:lookup(cars,Pid),
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey),
   case R1==R2 of
     false -> close_to_junction(Pid,ets:next(junction,FirstKey));

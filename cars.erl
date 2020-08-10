@@ -179,34 +179,34 @@ drive_straight(cast,{acc,Pid},State = #cars_state{}) ->
   {next_state, NextStateName, State};
 drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
   % TODO: keep straight
-  [{_,[{X,Y},D,R]}] = ets:lookup(cars,Pid),
+  [{_,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,Pid),
   if
-    D == up -> ets:update_element(cars,Pid,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,Pid,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,Pid,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,Pid,[{2,[{X - 1,Y},D,R]}])
+    D == up -> ets:update_element(cars,Pid,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
+    D == down ->ets:update_element(cars,Pid,[{2,[{X,Y +1 },D,R,Type,Turn]}]) ;
+    D == right ->ets:update_element(cars,Pid,[{2,[{X + 1,Y },D,R,Type,Turn]}]) ;
+    true -> ets:update_element(cars,Pid,[{2,[{X - 1,Y},D,R,Type,Turn]}])
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)};
 drive_straight(timeout,20,State = #cars_state{}) ->
   % TODO: keep straight
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,Turn]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}])
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,20};
 drive_straight(timeout,10,State = #cars_state{}) ->
   % TODO: keep straight
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,Turn]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}])
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,10};
@@ -260,28 +260,28 @@ idle(cast,{acc,Pid},State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State};
 idle(timeout,20,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,Turn]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}])
   end,
   NextStateName = idle,
   {next_state, NextStateName, State,20};
 idle(timeout,10,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()),
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
-    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}])
+    D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
+    D == down ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]) ;
+    D == right ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,Turn]}]) ;
+    true -> ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}])
   end,
   NextStateName = idle,
   {next_state, NextStateName, State,10};
 
 idle(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
-  [{_,[{_,_},D,_]}] = ets:lookup(cars,self()),
+  [{_,[{_,_},D,_,_,_]}] = ets:lookup(cars,self()),
   case D == Dir of
     true ->NextStateName1 = drive_straight,
       {next_state, NextStateName1, State,get(speed)};
@@ -333,7 +333,7 @@ turning(cast,{fturn,_},State = #cars_state{}) ->
   {next_state, NextStateName, #cars_state{turnCounter = 0},get(speed)};
 
 turning(timeout,10,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
   %M = State#cars_state.nextTurn,
   %io:format("~p~n",[M]),
 
@@ -342,26 +342,26 @@ turning(timeout,10,State = #cars_state{}) ->
   %io:format("~p~n ~p~n",[Dir,Road]),
 
   if
-    D == up, Dir == left, C =< 130 -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
-    D == up, Dir == right, C =< 80 ->ets:update_element(cars,P,[{2,[{X,Y -1 },D,R]}]) ;
+    D == up, Dir == left, C =< 130 -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,left]}]) ;
+    D == up, Dir == right, C =< 80 ->ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,right]}]) ;
 
-    D == down, Dir == left, C =< 130 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]) ;
-    D == down, Dir == right, C =< 80 -> ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]);
+    D == down, Dir == left, C =< 130 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,left]}]) ;
+    D == down, Dir == right, C =< 80 -> ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,right]}]);
 
-    D == right, Dir == up, C =< 130 ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
-    D == right, Dir == down, C =< 80 -> ets:update_element(cars,P,[{2,[{X + 1,Y },D,R]}]) ;
+    D == right, Dir == up, C =< 130 ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,left]}]) ;
+    D == right, Dir == down, C =< 80 -> ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,right]}]) ;
 
-    D == left, Dir == up, C =< 80 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R]}]) ;
-    D == left, Dir == down, C =< 130 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R]}]) ;
+    D == left, Dir == up, C =< 80 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,right]}]) ;
+    D == left, Dir == down, C =< 130 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,left]}]) ;
 
 
-    true ->   ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road]}]), server:car_finish_turn(self())
+    true ->   ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]), server:car_finish_turn(self())
   end,
   NextStateName = turning,
   {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10};
 
 turning(timeout,20,State = #cars_state{}) ->
-  [{P,[{X,Y},D,_]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
+  [{P,[{X,Y},D,_,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
 
   Dir = State#cars_state.nextTurnDir,
   Road = State#cars_state.nextTurnRoad,
@@ -369,17 +369,17 @@ turning(timeout,20,State = #cars_state{}) ->
 
 
   if
-    D == up, Dir == left, C =< 130 -> ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road]}]) ;
-    D == up, Dir == right, C =< 80 ->ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road]}]) ;
+    D == up, Dir == left, C =< 130 -> ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road,Type,Turn]}]) ;
+    D == up, Dir == right, C =< 80 ->ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road,Type,Turn]}]) ;
 
-    D == down, Dir == left, C =< 130 ->ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road]}]) ;
-    D == down, Dir == right, C =< 80 -> ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road]}]);
+    D == down, Dir == left, C =< 130 ->ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road,Type,Turn]}]) ;
+    D == down, Dir == right, C =< 80 -> ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road,Type,Turn]}]);
 
-    D == right, Dir == up, C =< 130 ->ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road]}]) ;
-    D == right, Dir == down, C =< 80 -> ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road]}]) ;
+    D == right, Dir == up, C =< 130 ->ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road,Type,Turn]}]) ;
+    D == right, Dir == down, C =< 80 -> ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road,Type,Turn]}]) ;
 
-    D == left, Dir == up, C =< 80 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road]}]) ;
-    D == left, Dir == down, C =< 130 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road]}]) ;
+    D == left, Dir == up, C =< 80 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road,Type,Turn]}]) ;
+    D == left, Dir == down, C =< 130 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road,Type,Turn]}]) ;
 
 
     true ->server:car_finish_turn(self())
@@ -456,23 +456,23 @@ bypassing(cast,{acc,Pid},State = #cars_state{}) ->
 
 
 bypassing(timeout,20,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
-    D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R]}]) ;
-    D == down, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y +1 },D,R]}]);
-    D == right, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y - 1 },D,R]}]);
-    D == left, C =< 26 ->ets:update_element(cars,P,[{2,[{X - 1,Y + 1},D,R]}]);
+    D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y +1 },D,R,Type,Turn]}]);
+    D == right, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y - 1 },D,R,Type,Turn]}]);
+    D == left, C =< 26 ->ets:update_element(cars,P,[{2,[{X - 1,Y + 1},D,R,Type,Turn]}]);
 
 
-    D == up, C > 26, C =< 300 -> ets:update_element(cars,P,[{2,[{X ,Y -1 },D,R]}]) ;
-    D == down, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]);
-    D == right, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X + 1,Y},D,R]}]);
-    D == left, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}]);
+    D == up, C > 26, C =< 300 -> ets:update_element(cars,P,[{2,[{X ,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]);
+    D == right, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X + 1,Y},D,R,Type,Turn]}]);
+    D == left, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}]);
 
-    D == up, C > 300  ,C =< 326 -> ets:update_element(cars,P,[{2,[{X + 1 ,Y -1 },D,R]}]) ;
-    D == down, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y +1 },D,R]}]);
-    D == right, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X + 1,Y + 1},D,R]}]);
-    D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R]}]);
+    D == up, C > 300  ,C =< 326 -> ets:update_element(cars,P,[{2,[{X + 1 ,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y +1 },D,R,Type,Turn]}]);
+    D == right, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X + 1,Y + 1},D,R,Type,Turn]}]);
+    D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R,Type,Turn]}]);
 
 
     true -> server:car_finish_bypass(self())
@@ -482,23 +482,23 @@ bypassing(timeout,20,State = #cars_state{}) ->
 
 
 bypassing(timeout,10,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
+  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
-    D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R]}]) ;
-    D == down, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y +1 },D,R]}]);
-    D == right, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y - 1 },D,R]}]);
-    D == left, C =< 26 ->ets:update_element(cars,P,[{2,[{X - 1,Y + 1},D,R]}]);
+    D == up, C =< 26 -> ets:update_element(cars,P,[{2,[{X - 1,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y +1 },D,R,Type,Turn]}]);
+    D == right, C =< 26 ->ets:update_element(cars,P,[{2,[{X + 1,Y - 1 },D,R,Type,Turn]}]);
+    D == left, C =< 26 ->ets:update_element(cars,P,[{2,[{X - 1,Y + 1},D,R,Type,Turn]}]);
 
 
-    D == up, C > 26, C =< 300 -> ets:update_element(cars,P,[{2,[{X ,Y -1 },D,R]}]) ;
-    D == down, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R]}]);
-    D == right, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X + 1,Y},D,R]}]);
-    D == left, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X - 1,Y},D,R]}]);
+    D == up, C > 26, C =< 300 -> ets:update_element(cars,P,[{2,[{X ,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,Turn]}]);
+    D == right, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X + 1,Y},D,R,Type,Turn]}]);
+    D == left, C > 26,C =< 300 ->ets:update_element(cars,P,[{2,[{X - 1,Y},D,R,Type,Turn]}]);
 
-    D == up, C > 300  ,C =< 326 -> ets:update_element(cars,P,[{2,[{X + 1 ,Y -1 },D,R]}]) ;
-    D == down, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y +1 },D,R]}]);
-    D == right, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X + 1,Y + 1},D,R]}]);
-    D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R]}]);
+    D == up, C > 300  ,C =< 326 -> ets:update_element(cars,P,[{2,[{X + 1 ,Y -1 },D,R,Type,Turn]}]) ;
+    D == down, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y +1 },D,R,Type,Turn]}]);
+    D == right, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X + 1,Y + 1},D,R,Type,Turn]}]);
+    D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R,Type,Turn]}]);
 
 
     true -> server:car_finish_bypass(self())
