@@ -18,7 +18,7 @@
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2]).
 -define(max_x, 1344).
 -define(max_y,890).
--define(Timer,66).
+-define(Timer,20).
 
 -define(SERVER, ?MODULE).
 -record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,key}).
@@ -165,8 +165,24 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
                     up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                   end;
-           grey -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
-           truck ->  wxDC:drawBitmap(DI, BmpTruck, {A, B})
+           grey -> case D of
+                     left -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
+                     down -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                     right -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),
+                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                     up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
+                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+                   end;
+           truck ->  case D of
+                       left -> wxDC:drawBitmap(DI, BmpTruck, {A, B});
+                       down -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                       right -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,600,{A,B}),
+                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                       up -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,300,{A,B}),
+                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+                     end
          end;
     right -> case Type of
                red -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,0,{A,B}),
@@ -198,7 +214,7 @@ handle_info(timer, State=#state{frame = Frame}) ->                    % refresh 
 %  checkUpdateCall(?PC4),
 %io:format("fdsnjkdsnskj"),
   wxWindow:refresh(Frame),
-  erlang:send_after(66,self(),timer),
+  erlang:send_after(20,self(),timer),
   {noreply, State}.
 
 

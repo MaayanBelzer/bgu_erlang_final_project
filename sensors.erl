@@ -61,44 +61,44 @@ close_to_junction(Pid,FirstKey) ->  [{_,[{X,Y},Dir1,R1,_,_]}] = ets:lookup(cars,
     _ -> case Dir1 of
            left -> D = X-X2, if
                                D =< 60 , D >= 0-> case LightPid of
-                                                    nal -> cars:close_to_junc(Pid,green,FirstKey),
-                                                      timer:sleep(2000),
+                                                    nal -> cars:close_to_junc(Pid,green,FirstKey,nal),
+                                                      timer:sleep(3000),
                                                       close_to_junction(Pid,ets:first(junction));
-                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey),
-                                                      timer:sleep(2000),
+                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey,LP),
+                                                      timer:sleep(3000),
                                                       close_to_junction(Pid,ets:first(junction))
                                                   end;
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                              end;
            right -> D = X2-X, if
                                 D =< 60 , D >= 0-> case LightPid of
-                                                     nal -> cars:close_to_junc(Pid,green,FirstKey),
-                                                       timer:sleep(2000),
+                                                     nal -> cars:close_to_junc(Pid,green,FirstKey,nal),
+                                                       timer:sleep(3000),
                                                        close_to_junction(Pid,ets:first(junction));
-                                                     LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey),
-                                                       timer:sleep(2000),
+                                                     LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey,LP),
+                                                       timer:sleep(3000),
                                                        close_to_junction(Pid,ets:first(junction))
                                                    end;
                                 true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                               end;
            up -> D = Y-Y2, if
                              D =< 60 , D >= 0-> case LightPid of
-                                                  nal -> cars:close_to_junc(Pid,green,FirstKey),
-                                                    timer:sleep(2000),
+                                                  nal -> cars:close_to_junc(Pid,green,FirstKey,nal),
+                                                    timer:sleep(3000),
                                                     close_to_junction(Pid,ets:first(junction));
-                                                  LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey),
-                                                    timer:sleep(2000),
+                                                  LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey,LP),
+                                                    timer:sleep(3000),
                                                     close_to_junction(Pid,ets:first(junction))
                                                 end;
                              true -> close_to_junction(Pid,ets:next(junction,FirstKey))
                            end;
            down -> D = Y2-Y, if
                                D =< 60 , D >= 0-> case LightPid of
-                                                    nal -> cars:close_to_junc(Pid,green,FirstKey),
-                                                      timer:sleep(2000),
+                                                    nal -> cars:close_to_junc(Pid,green,FirstKey,nal),
+                                                      timer:sleep(3000),
                                                       close_to_junction(Pid,ets:first(junction));
-                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey),
-                                                      timer:sleep(2000),
+                                                    LP -> cars:close_to_junc(Pid,sys:get_state(LP),FirstKey,LP),
+                                                      timer:sleep(3000),
                                                       close_to_junction(Pid,ets:first(junction))
                                                   end;
                                true -> close_to_junction(Pid,ets:next(junction,FirstKey))

@@ -93,7 +93,7 @@ red(cast,{msg},State = #traffic_light_state{}) ->
 yellow(timeout,1000,State = #traffic_light_state{}) ->
   % TODO: turn red
   NextStateName = red,
-  {next_state, NextStateName, State}.
+  {next_state, NextStateName, State,2000}.
 green(timeout,4000,State = #traffic_light_state{}) ->
   % TODO: turn yellow
   NextStateName = yellow,
