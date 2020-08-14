@@ -19,7 +19,7 @@
   code_change/4, callback_mode/0]).
 
 %Events
--export([timeout/0,server_msg/0]).
+-export([timeout/0,sensor_msg/2]).
 
 %States
 -export([red/3,green/3,yellow/3]).
@@ -62,7 +62,7 @@ callback_mode() ->
 
 %%Events
 timeout() -> gen_statem:cast(?MODULE,{time}).
-server_msg() -> gen_statem:cast(?MODULE,{msg}).
+sensor_msg(Pid,Color) -> gen_statem:cast(Pid,{msg,Color}).
 
 
 %% @private
@@ -82,26 +82,31 @@ state_name(_EventType, _EventContent, State = #traffic_light_state{}) ->
   NextStateName = next_state,
   {next_state, NextStateName, State}.
 
+red(timeout,3000,State = #traffic_light_state{}) ->
+  NextStateName = green,
+  {next_state, NextStateName, State,3000};
 red(timeout,2000,State = #traffic_light_state{}) ->
-  % TODO: turn green
   NextStateName = green,
-  {next_state, NextStateName, State,4000};
-red(cast,{msg},State = #traffic_light_state{}) ->
-  % TODO: turn green
-  NextStateName = green,
-  {next_state, NextStateName, State}.
-yellow(timeout,1000,State = #traffic_light_state{}) ->
-  % TODO: turn red
+  {next_state, NextStateName, State,3000};
+red(cast,{msg,_},State = #traffic_light_state{}) ->
   NextStateName = red,
-  {next_state, NextStateName, State,2000}.
-green(timeout,4000,State = #traffic_light_state{}) ->
-  % TODO: turn yellow
+  {next_state, NextStateName, State,3000}.
+yellow(timeout,1000,State = #traffic_light_state{}) ->
+  NextStateName = red,
+  {next_state, NextStateName, State,2000};
+yellow(cast,{msg,_},State = #traffic_light_state{}) ->
+  NextStateName = yellow,
+  {next_state, NextStateName, State,1000}.
+green(timeout,3000,State = #traffic_light_state{}) ->
   NextStateName = yellow,
   {next_state, NextStateName, State,1000};
-green(cast,{msg},State = #traffic_light_state{}) ->
-  % TODO: turn yellow
-  NextStateName = yellow,
-  {next_state, NextStateName, State}.
+green(cast,{msg,Color},State = #traffic_light_state{}) ->
+  case Color of
+    red ->   NextStateName = yellow,
+      {next_state, NextStateName, State,1000};
+    _ ->   NextStateName = green,
+      {next_state, NextStateName, State,3000}
+  end.
 
 %% @private
 %% @doc If callback_mode is handle_event_function, then whenever a

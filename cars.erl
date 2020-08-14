@@ -27,15 +27,15 @@
 
 %%Events
 -export([close_to_car/2,close_to_junc/4,accident/1,slow_down/1,speed_up/1,turn/2,go_straight/1,bypass/1,far_from_car/1]).
--export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,f_turn/1,keepStraight/1,stop/1]).
+-export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,f_turn/1,keepStraight/1,stop/2,kill/1]).
 
 %% States
--export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,turn_after_stop/3,stopping/3,bypassing/3,start/3]).
+-export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,stopping/3,bypassing/3,start/3]).
 
 
 -define(SERVER, ?MODULE).
 
--record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir,nextTurnRoad, speed,lightPid}).
+-record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir,nextTurnRoad, speed,lightPid,sensor1,sensor2}).
 
 %%%===================================================================
 %%% API
@@ -76,11 +76,15 @@ start(Name,Type,Start) ->
 init([Start,Type]) ->
   %%----------------process_flag??
   ets:insert(cars,{self(),Start}),
+%  spawn_link(sensors,close_to_car,[self(),ets:first(cars)]),
+%  spawn_link(sensors,close_to_junction,[self(),ets:first(junction)]),
+
+%  spawn_link(sensors,outOfRange,[self()]),
   SensorPid = spawn(sensors,close_to_car,[self(),ets:first(cars)]),
   SensorPid2= spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
-  put(speed ,Type),
+  put(speed ,Type),put(sensor1 ,SensorPid),put(sensor2 ,SensorPid2),
 
-  {ok,drive_straight, #cars_state{speed = Type},Type}.
+  {ok,drive_straight, #cars_state{speed = Type },Type}.
 
 
 %%--------------------------------------------------------------------
@@ -103,8 +107,6 @@ slow_down(Pid) -> gen_statem:cast(Pid,{slow,Pid}).
 speed_up(Pid) -> gen_statem:cast(Pid,{speed,Pid}).
 turn(Pid,{Dir, Road}) ->gen_statem:cast(Pid,{turn,Pid,{Dir, Road}}).
 f_turn(Pid) -> gen_statem:cast(Pid,{fturn,Pid}).
-%turn(Pid,left) -> gen_statem:cast(Pid,{turnL,Pid});
-%turn(Pid,right) -> gen_statem:cast(Pid,{turnR,Pid}).
 go_straight(Pid) -> gen_statem:cast(Pid,{str8,Pid}).
 bypass(Pid) -> gen_statem:cast(Pid,{byp,Pid}).
 f_bypass(Pid) -> gen_statem:cast(Pid,{fByp,Pid}).
@@ -115,7 +117,10 @@ green_light(Pid,straight) -> gen_statem:cast(Pid,{greenS,Pid});
 green_light(Pid,left) -> gen_statem:cast(Pid,{greenL,Pid});
 green_light(Pid,right) -> gen_statem:cast(Pid,{greenR,Pid}).
 keepStraight(Pid) -> gen_statem:cast(Pid,{kst,Pid}).
-stop(Pid) -> gen_statem:cast(Pid,{stop,Pid}).
+stop(Pid,OtherCar) -> gen_statem:cast(Pid,{stop,Pid,OtherCar}).
+kill(Pid) ->  gen_statem:cast(Pid,{kill,Pid}).
+
+
 
 
 
@@ -162,28 +167,28 @@ state_name(_EventType, _EventContent, State) ->
 
 
 drive_straight(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  % TODO: send message to server
   server:s_close_to_car(Pid,OtherCar),
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)};
-drive_straight(cast,{ctj,Pid,T,{R,J},LP},State = #cars_state{}) ->
-  % TODO: slow down, send message to server and stop\keep going according to traffic light
-case T of
-  green -> NextStateName = idle,  server:s_light(Pid,{R,J}),
-    {next_state, NextStateName, #cars_state{lightPid = LP},get(speed)};
-  _ -> NextStateName = stopping,  server:s_light(Pid,{R,J}), {next_state, NextStateName, #cars_state{lightPid = LP}}
+drive_straight(cast,{ctj,Pid,T,{R,J},LP},_) ->
+  case T of
+    green -> NextStateName = idle,  server:s_light(Pid,{R,J}),
+      {next_state, NextStateName, #cars_state{lightPid = LP},get(speed)};
 
-end;
+    _ -> NextStateName = stopping,
+      server:s_light(Pid,{R,J}),
+      {next_state, NextStateName, #cars_state{lightPid = LP}}
+
+  end;
 
 
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 drive_straight(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
 drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
-  % TODO: keep straight
   [{_,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,Pid),
   if
     D == up -> ets:update_element(cars,Pid,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
@@ -194,7 +199,6 @@ drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)};
 drive_straight(timeout,20,State = #cars_state{}) ->
-  % TODO: keep straight
   [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
     D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
@@ -205,7 +209,6 @@ drive_straight(timeout,20,State = #cars_state{}) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, State,20};
 drive_straight(timeout,10,State = #cars_state{}) ->
-  % TODO: keep straight
   [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()),
   if
     D == up -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,Turn]}]) ;
@@ -218,20 +221,17 @@ drive_straight(timeout,10,State = #cars_state{}) ->
 drive_straight(cast,{stop,Pid},State = #cars_state{}) ->
   % TODO: stop
   NextStateName = stopping,
+  {next_state, NextStateName, State};
+
+drive_straight(cast,{kill,Pid},State = #cars_state{}) ->
+  K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
+  exit(K1,kill),exit(K2,kill),
+  io:format("~p~n~p~n",[K1,K2]),
+
+  exit(Pid,kill),
+  %server:deleteCar(Pid),
+  NextStateName = terminate,
   {next_state, NextStateName, State}.
-
-%drive_straight(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
-%io:format("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
-%  [{_,[{_,_},D,_]}] = ets:lookup(cars,self()),
-% case D == Dir of
-% true ->NextStateName1 = drive_straight,
-%    {next_state, NextStateName1, State,get(speed)};
-%  _ ->  NextStateName = turning,
-%     {next_state, NextStateName, #cars_state{nextTurn = [Dir, Road]},get(speed)}
-
-%  end.
-
-
 
 
 
@@ -242,18 +242,6 @@ idle(cast,{slow,Pid},State = #cars_state{}) ->
   {next_state, NextStateName, State};
 idle(cast,{speed,Pid},State = #cars_state{}) ->
   % TODO: accelerate
-  NextStateName = accelerating,
-  {next_state, NextStateName, State};
-idle(cast,{turnL,Pid},State = #cars_state{}) ->
-  % TODO: start turning left
-  NextStateName = turning,
-  {next_state, NextStateName, State};
-idle(cast,{turnR,Pid},State = #cars_state{}) ->
-  % TODO: start turning right
-  NextStateName = turning,
-  {next_state, NextStateName, State};
-idle(cast,{str8,Pid},State = #cars_state{}) ->
-  % TODO: go straight
   NextStateName = accelerating,
   {next_state, NextStateName, State};
 idle(cast,{byp,Pid},State = #cars_state{}) ->
@@ -285,7 +273,7 @@ idle(timeout,10,State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State,10};
 
-idle(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
+idle(cast,{turn,_,{Dir, Road}},State = #cars_state{}) ->
   [{_,[{_,_},D,_,_,_]}] = ets:lookup(cars,self()),
   case D == Dir of
     true ->NextStateName1 = drive_straight,
@@ -295,11 +283,27 @@ idle(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
 
   end;
 
+idle(cast,{stop,_,OtherCar},State = #cars_state{}) ->
+  spawn(sensors,far_from_car,[self(),OtherCar]),
+  NextStateName = stopping,
+  {next_state, NextStateName, State};
 
+
+idle(cast,{kill,Pid},State = #cars_state{}) ->
+  K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
+  exit(K1,kill),exit(K2,kill),
+  io:format("~p~n~p~n",[K1,K2]),
+
+  exit(Pid,kill),
+  %server:deleteCar(Pid),
+  NextStateName = terminate,
+  {next_state, NextStateName, State};
 
 idle(cast,_,State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)}.
+
+
 slowing(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
@@ -333,12 +337,13 @@ accelerating(cast,{acc,Pid},State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State}.
 
-turning(cast,{fturn,_},State = #cars_state{}) ->
+
+
+turning(cast,{fturn,_},_) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, #cars_state{turnCounter = 0},get(speed)};
-
 turning(timeout,10,State = #cars_state{}) ->
-  [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
+  [{P,[{X,Y},D,R,Type,_]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
   Dir = State#cars_state.nextTurnDir,
   Road = State#cars_state.nextTurnRoad,
   if
@@ -360,31 +365,30 @@ turning(timeout,10,State = #cars_state{}) ->
   {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10};
 
 turning(timeout,20,State = #cars_state{}) ->
-  [{P,[{X,Y},D,_,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
+  [{P,[{X,Y},D,R,Type,_]}] = ets:lookup(cars,self()), C =State#cars_state.turnCounter,
 
   Dir = State#cars_state.nextTurnDir,
   Road = State#cars_state.nextTurnRoad,
-  io:format("~p~n ~p~n",[Dir,Road]),
 
 
   if
-    D == up, Dir == left, C =< 130 -> ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road,Type,Turn]}]) ;
-    D == up, Dir == right, C =< 80 ->ets:update_element(cars,P,[{2,[{X,Y -1 },Dir,Road,Type,Turn]}]) ;
+    D == up, Dir == left, C =< 120 -> ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,st]}]) ;
+    D == up, Dir == right, C =< 75 ->ets:update_element(cars,P,[{2,[{X,Y -1 },D,R,Type,st]}]) ;
 
-    D == down, Dir == left, C =< 130 ->ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road,Type,Turn]}]) ;
-    D == down, Dir == right, C =< 80 -> ets:update_element(cars,P,[{2,[{X,Y +1 },Dir,Road,Type,Turn]}]);
+    D == down, Dir == left, C =< 75 ->ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,st]}]) ;
+    D == down, Dir == right, C =< 120 -> ets:update_element(cars,P,[{2,[{X,Y +1 },D,R,Type,st]}]);
 
-    D == right, Dir == up, C =< 130 ->ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road,Type,Turn]}]) ;
-    D == right, Dir == down, C =< 80 -> ets:update_element(cars,P,[{2,[{X + 1,Y },Dir,Road,Type,Turn]}]) ;
+    D == right, Dir == up, C =< 120 ->ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,st]}]) ;
+    D == right, Dir == down, C =< 75 -> ets:update_element(cars,P,[{2,[{X + 1,Y },D,R,Type,st]}]) ;
 
-    D == left, Dir == up, C =< 80 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road,Type,Turn]}]) ;
-    D == left, Dir == down, C =< 130 -> ets:update_element(cars,P,[{2,[{X - 1,Y },Dir,Road,Type,Turn]}]) ;
+    D == left, Dir == up, C =< 75 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,st]}]) ;
+    D == left, Dir == down, C =< 120 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,st]}]) ;
 
 
-    true ->server:car_finish_turn(self())
+    true -> ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]), server:car_finish_turn(self())
   end,
   NextStateName = turning,
-  {next_state, NextStateName, #cars_state{turnCounter = C + 1},20};
+  {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },20};
 
 
 
@@ -396,49 +400,40 @@ turning(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-turning(cast,{fTurn,Pid},State = #cars_state{}) ->
-  % TODO: start accelerating
-  NextStateName = accelerating,
-  {next_state, NextStateName, State};
+
 turning(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
-  {next_state, NextStateName, State}.
-turn_after_stop(cast,{acc,Pid},State = #cars_state{}) ->
-  % TODO: send message to server
-  NextStateName = idle,
   {next_state, NextStateName, State};
-turn_after_stop(cast,{fTurn,Pid},State = #cars_state{}) ->
-  % TODO: start accelerating
-  NextStateName = accelerating,
-  {next_state, NextStateName, State};
-turn_after_stop(cast,{acc,Pid},State = #cars_state{}) ->
-  % TODO: stop and send message to server
-  NextStateName = idle,
+turning(cast,{kill,Pid},State = #cars_state{}) ->
+  K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
+  exit(K1,kill),exit(K2,kill),
+  io:format("~p~n~p~n",[K1,K2]),
+
+  exit(Pid,kill),
+  %server:deleteCar(Pid),
+  NextStateName = terminate,
   {next_state, NextStateName, State}.
+
+
+
+
 stopping(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
   LP = State#cars_state.lightPid,
   NextStateName = stopping,
   {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road,lightPid = LP},get(speed)};
-%  [{_,[{_,_},D,_,_,_]}] = ets:lookup(cars,self()),
-%  case D == Dir of
-%    true ->NextStateName1 = drive_straight,
-%      {next_state, NextStateName1, State,get(speed)};
-%    _ ->  NextStateName = turning,
-%      {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road},get(speed)}
-%
-%  end;
+
 stopping(timeout,20,State = #cars_state{}) ->
   LP = State#cars_state.lightPid, Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad,
   case sys:get_state(LP) of
-    green ->   [{_,[{_,_},D,_,_,_]}] = ets:lookup(cars,self()),
-     case D == Dir of
-    true ->NextStateName1 = drive_straight,
-      {next_state, NextStateName1, State,get(speed)};
-    _ ->  NextStateName = turning,
-      {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road},get(speed)}
+    {green,_} ->   [{_,[{_,_},D,_,_,_]}] = ets:lookup(cars,self()),
+      case D == Dir of
+        true ->NextStateName1 = drive_straight,
+          {next_state, NextStateName1, State,get(speed)};
+        _ ->  NextStateName = turning,
+          {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road},get(speed)}
 
-     end;
+      end;
     _ -> NextStateName = stopping,
       {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road, lightPid = LP},20}
   end ;
@@ -456,40 +451,56 @@ stopping(timeout,10,State = #cars_state{}) ->
     _ -> NextStateName = stopping,
       {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road, lightPid = LP},10}
   end ;
-stopping(cast,{ctj,Pid,_,_,_},State = #cars_state{}) ->
-%  % TODO: accelerate
+stopping(cast,{ctj,_,_,_,_},State = #cars_state{}) ->
   LP = State#cars_state.lightPid, Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad,
   NextStateName = stopping,
   {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road, lightPid = LP},get(speed)};
-stopping(cast,{far,Pid},State = #cars_state{}) ->
-  % TODO: send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State};
+stopping(cast,{far,_},State = #cars_state{}) ->
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,get(speed)};
 stopping(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
+  {next_state, NextStateName, State};
+stopping(cast,_,State = #cars_state{}) ->
+  NextStateName = stopping,
   {next_state, NextStateName, State}.
-bypassing(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  % TODO: slow down and send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-bypassing(cast,{ctj,Pid},State = #cars_state{}) ->
-  % TODO: slow down, send message to server and stop\keep going according to traffic light
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-bypassing(cast,{fByp,_},State = #cars_state{}) ->
-  % TODO: return to right lane and drive straight
 
+
+
+bypassing(cast,{ctc,_,_},_) ->
+  NextStateName = bypassing,
+  {next_state, NextStateName, #cars_state{bypassCounter = 280}};
+bypassing(cast,{ctj,_,T,{_,_},LP},State = #cars_state{}) ->
+  C =State#cars_state.bypassCounter,
+  case T of
+    {green,_} -> NextStateName = bypassing,
+      {next_state, NextStateName, #cars_state{bypassCounter = C},get(speed)};
+
+    _ -> NextStateName = bypassing,
+      {next_state, NextStateName, #cars_state{lightPid = LP,bypassCounter = C},8}
+
+  end;
+bypassing(timeout,8,State = #cars_state{}) ->
+  LP = State#cars_state.lightPid, C = State#cars_state.bypassCounter,
+  case LP of
+    nal ->  NextStateName = bypassing,
+      {next_state, NextStateName, #cars_state{bypassCounter = C},get(speed)};
+    _ -> case sys:get_state(LP) of
+           {green,_} -> NextStateName = bypassing,
+             {next_state, NextStateName, #cars_state{bypassCounter = 100},get(speed)};
+           _ -> NextStateName = bypassing,
+             {next_state, NextStateName, #cars_state{lightPid = LP},8}
+         end
+  end;
+
+bypassing(cast,{fByp,_},_) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, #cars_state{bypassCounter = 0},get(speed)};
-bypassing(cast,{acc,Pid},State = #cars_state{}) ->
+bypassing(cast,{acc,_},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
-
-
-
-
 bypassing(timeout,20,State = #cars_state{}) ->
   [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
@@ -514,8 +525,6 @@ bypassing(timeout,20,State = #cars_state{}) ->
   end,
   NextStateName = bypassing,
   {next_state, NextStateName, #cars_state{bypassCounter = C + 1},20};
-
-
 bypassing(timeout,10,State = #cars_state{}) ->
   [{P,[{X,Y},D,R,Type,Turn]}] = ets:lookup(cars,self()), C =State#cars_state.bypassCounter,
   if
@@ -539,7 +548,16 @@ bypassing(timeout,10,State = #cars_state{}) ->
     true -> server:car_finish_bypass(self())
   end,
   NextStateName = bypassing,
-  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},10}.
+  {next_state, NextStateName, #cars_state{bypassCounter = C + 1},10};
+bypassing(cast,{kill,Pid},State = #cars_state{}) ->
+  K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
+  exit(K1,kill),exit(K2,kill),
+  io:format("~p~n~p~n",[K1,K2]),
+
+  exit(Pid,kill),
+  %server:deleteCar(Pid),
+  NextStateName = terminate,
+  {next_state, NextStateName, State}.
 
 
 %%--------------------------------------------------------------------
@@ -581,6 +599,7 @@ handle_event(_EventType, _EventContent, _StateName, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _StateName, _State) ->
+  ets:delete(cars,self()),
   ok.
 
 %%--------------------------------------------------------------------

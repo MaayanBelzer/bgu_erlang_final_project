@@ -80,7 +80,7 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DC2,BmpRmap,{0,0}),
 
 
-  
+
   DrawTrafficA1 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficA1, BmpTrafficLight, {1130, 35}),
   DrawTrafficA2 = wxClientDC:new(Panel),
@@ -141,7 +141,7 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
 
 
-   printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
+  printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
 
 
 
@@ -202,7 +202,7 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
             end
 
   end,
-printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpTruck).
+  printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpTruck).
 
 
 
