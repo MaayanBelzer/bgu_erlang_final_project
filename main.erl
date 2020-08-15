@@ -45,7 +45,7 @@ init([]) ->
 
 
 
-  % erlang:send_after(?TIMER, self(), timer),
+  % erlang:send_after(?TIMER, self(), timer),%
   wxPanel:connect(Panel, paint, [callback]),
   wxPanel:connect (Panel, left_down),
 %  wxPanel:connect (Panel, right_down),
@@ -62,9 +62,9 @@ init([]) ->
 %  {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
 %    bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
 %    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight }}.
-{Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
-bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed }}.
+  {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
+    bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
+    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed }}.
 %%%-------------------------------------------------------------------
 
 handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) ->                                                 % close window event
@@ -75,6 +75,8 @@ handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) ->         
 
 handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
   io:format("~p~n", [{X,Y}]),
+  search_close_car(ets:first(cars),{X,Y}),
+  search_close_junction(ets:first(junction),{X,Y}),
   {noreply,State}.
 
 handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
@@ -168,11 +170,11 @@ handle_sync_event(_Event,_,State) ->
 %          {green,_} ->DrawTraffic = wxClientDC:new(Panel),
 %            wxDC:drawBitmap(DrawTraffic, BmpTrafficLightGreen, {XP,YP}),
 %            printTtafficLight(ets:next(junction,Key),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed) ;
-%
+
 %          {red,_} ->DrawTraffic = wxClientDC:new(Panel),
 %            wxDC:drawBitmap(DrawTraffic, BmpTrafficLightRed, {XP,YP}),
 %            printTtafficLight(ets:next(junction,Key),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed) ;
-%
+
 %          _->DrawTraffic = wxClientDC:new(Panel),
 %            wxDC:drawBitmap(DrawTraffic, BmpTrafficLight,{XP,YP}),
 %            printTtafficLight(ets:next(junction,Key),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed)
@@ -308,7 +310,28 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(TrafficLightcR),
 
 %  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight}.
-{BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed}.
+  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed}.
+
+
+search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
+search_close_car(Key,{X,Y}) ->
+  [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key),
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  if
+    D =< 40 -> io:format("~p~n",[Key]), ok;
+    true-> search_close_car(ets:next(cars,Key),{X,Y})
+  end.
+
+search_close_junction('$end_of_table',_) ->io:format("there is no close junction ~n") ,ok;
+search_close_junction(Key,{X,Y}) ->
+  [{{R,J},[{X2,Y2},_]}] =  ets:lookup(junction,Key),
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  if
+    D =< 70 -> io:format("~p~n",[{R,J}]), ok;
+    true-> search_close_junction(ets:next(junction,Key),{X,Y})
+  end.
+
+
 
 
 
