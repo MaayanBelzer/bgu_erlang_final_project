@@ -30,12 +30,12 @@
 -export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,f_turn/1,keepStraight/1,stop/2,kill/1]).
 
 %% States
--export([drive_straight/3,idle/3,slowing/3,accelerating/3,turning/3,stopping/3,bypassing/3,start/3]).
+-export([drive_straight/3,idle/3,turning/3,stopping/3,bypassing/3,start/3,send_msg/2,first_state/3]).
 
 
 -define(SERVER, ?MODULE).
 
--record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir,nextTurnRoad, speed,lightPid,sensor1,sensor2}).
+-record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir  ,nextTurnRoad, speed,lightPid,sensor1,sensor2}).
 
 %%%===================================================================
 %%% API
@@ -82,9 +82,10 @@ init([Start,Type]) ->
 %  spawn_link(sensors,outOfRange,[self()]),
   SensorPid = spawn(sensors,close_to_car,[self(),ets:first(cars)]),
   SensorPid2= spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
-  put(speed ,Type),put(sensor1 ,SensorPid),put(sensor2 ,SensorPid2),
+  put(speed ,Type),%put(sensor1 ,SensorPid),put(sensor2 ,SensorPid2),
 
   {ok,drive_straight, #cars_state{speed = Type },Type}.
+%  {ok,first_state, #cars_state{speed = Type },5}.
 
 
 %%--------------------------------------------------------------------
@@ -103,22 +104,23 @@ callback_mode() ->
 close_to_car(Pid,OtherCar) -> gen_statem:cast(Pid,{ctc,Pid,OtherCar}).
 close_to_junc(Pid,LightState,{R,J},LP) -> gen_statem:cast(Pid,{ctj,Pid,LightState,{R,J},LP}).
 accident(Pid) -> gen_statem:cast(Pid,{acc,Pid}).
-slow_down(Pid) -> gen_statem:cast(Pid,{slow,Pid}).
-speed_up(Pid) -> gen_statem:cast(Pid,{speed,Pid}).
+slow_down(Pid) -> gen_statem:cast(Pid,{slow,Pid}).%%%%%%%%%%%%%%%%% delete
+speed_up(Pid) -> gen_statem:cast(Pid,{speed,Pid}).%%%%%%%%%%%%%%%%% delete
 turn(Pid,{Dir, Road}) ->gen_statem:cast(Pid,{turn,Pid,{Dir, Road}}).
 f_turn(Pid) -> gen_statem:cast(Pid,{fturn,Pid}).
 go_straight(Pid) -> gen_statem:cast(Pid,{str8,Pid}).
 bypass(Pid) -> gen_statem:cast(Pid,{byp,Pid}).
 f_bypass(Pid) -> gen_statem:cast(Pid,{fByp,Pid}).
 far_from_car(Pid) -> gen_statem:cast(Pid,{far,Pid}).
-max_speed(Pid) -> gen_statem:cast(Pid,{maxS,Pid}).
+max_speed(Pid) -> gen_statem:cast(Pid,{maxS,Pid}).%%%%%%%%%%%%%%%%% delete
 finish_turn(Pid) -> gen_statem:cast(Pid,{fTurn,Pid}).
-green_light(Pid,straight) -> gen_statem:cast(Pid,{greenS,Pid});
-green_light(Pid,left) -> gen_statem:cast(Pid,{greenL,Pid});
-green_light(Pid,right) -> gen_statem:cast(Pid,{greenR,Pid}).
+green_light(Pid,straight) -> gen_statem:cast(Pid,{greenS,Pid});%%%%%%%%%%%%%%%%% delete
+green_light(Pid,left) -> gen_statem:cast(Pid,{greenL,Pid});%%%%%%%%%%%%%%%%% delete
+green_light(Pid,right) -> gen_statem:cast(Pid,{greenR,Pid}).%%%%%%%%%%%%%%%%% delete
 keepStraight(Pid) -> gen_statem:cast(Pid,{kst,Pid}).
 stop(Pid,OtherCar) -> gen_statem:cast(Pid,{stop,Pid,OtherCar}).
 kill(Pid) ->  gen_statem:cast(Pid,{kill,Pid}).
+send_msg(Pid,{From,Msg}) -> gen_statem:cast(Pid,{send,Pid,From,Msg}).
 
 
 
@@ -165,18 +167,83 @@ state_name(_EventType, _EventContent, State) ->
   NextStateName = next_state,
   {next_state, NextStateName, State}.
 
+first_state(timeout,5,State = #cars_state{}) ->
+  SensorPid = spawn(sensors,close_to_car,[self(),ets:first(cars)]),
+  SensorPid2 = spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
+  SensorPid3 = spawn(sensors,outOfRange,[self()]),
+  put(sensor1 ,SensorPid), put(sensor2 ,SensorPid2), put(sensor3,SensorPid3),
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,get(speed)}.
+
+drive_straight(cast,{send,Who,From,Msg},State = #cars_state{})->
+  {Bool1,To} = check_comms_d(Who,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,From,Msg);
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{From,Msg});
+
+        _-> [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
+          communication_tower:receive_message(To3,From,Msg) % TODO consider computer split
+
+        % io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
+      end
+  end,
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,get(speed)};
+
+
 
 drive_straight(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  server:s_close_to_car(Pid,OtherCar),
+
+
+  {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,Pid,{s_close_to_car,OtherCar});
+    _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{Pid,{s_close_to_car,OtherCar}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
+        _->  server:s_close_to_car(null,Pid,OtherCar)
+        %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+      end
+  end,
+
+
+%  server:s_close_to_car(Pid,OtherCar),
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)};
+
 drive_straight(cast,{ctj,Pid,T,{R,J},LP},_) ->
   case T of
-    green -> NextStateName = idle,  server:s_light(Pid,{R,J}),
+    green -> NextStateName = idle,
+
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{s_light,{R,J}});
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{s_light,{R,J}}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
+            _->  server:s_light(null,Pid,{R,J})
+            %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end,
+
+%      server:s_light(Pid,{R,J}),
       {next_state, NextStateName, #cars_state{lightPid = LP},get(speed)};
 
     _ -> NextStateName = stopping,
-      server:s_light(Pid,{R,J}),
+
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{s_light,{R,J}});
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{s_light,{R,J}}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
+            _->  server:s_light(null,Pid,{R,J})
+%io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end,
+%      server:s_light(Pid,{R,J}),
       {next_state, NextStateName, #cars_state{lightPid = LP}}
 
   end;
@@ -224,14 +291,18 @@ drive_straight(cast,{stop,Pid},State = #cars_state{}) ->
   {next_state, NextStateName, State};
 
 drive_straight(cast,{kill,Pid},State = #cars_state{}) ->
-  K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
-  exit(K1,kill),exit(K2,kill),
-  io:format("~p~n~p~n",[K1,K2]),
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3),
+  %exit(K1,kill),exit(K2,kill),exit(K3,kill),
+  io:format("~p~n~p~n~p~n",[K1,K2,K3]).
+  %server:deleteCar(Pid), %ets:delete(cars,Pid),
+  %exit(Pid,kill),
+%  erase().
+ % ets:delete(cars,Pid).
+ % exit(Pid,kill).
 
-  exit(Pid,kill),
   %server:deleteCar(Pid),
-  NextStateName = terminate,
-  {next_state, NextStateName, State}.
+  %NextStateName = terminate,
+  %{next_state, NextStateName, State}.
 
 
 
@@ -288,6 +359,25 @@ idle(cast,{stop,_,OtherCar},State = #cars_state{}) ->
   NextStateName = stopping,
   {next_state, NextStateName, State};
 
+idle(cast,{send,Who,From,Msg},State = #cars_state{})->
+  {Bool1,To} = check_comms_d(Who,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,From,Msg);
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{From,Msg});
+        _->[{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
+          communication_tower:receive_message(To3,From,Msg) % TODO consider computer split
+
+
+        %  io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
+      end
+  end,
+  NextStateName = idle,
+  {next_state, NextStateName, State,get(speed)};
+
+
+
 
 idle(cast,{kill,Pid},State = #cars_state{}) ->
   K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
@@ -302,41 +392,6 @@ idle(cast,{kill,Pid},State = #cars_state{}) ->
 idle(cast,_,State = #cars_state{}) ->
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)}.
-
-
-slowing(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  % TODO: send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-slowing(cast,{ctj,Pid},State = #cars_state{}) ->
-  % TODO: slow down, send message to server and stop\keep going according to traffic light
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-slowing(cast,{far,Pid},State = #cars_state{}) ->
-  % TODO: start accelerating
-  NextStateName = accelerating,
-  {next_state, NextStateName, State};
-slowing(cast,{acc,Pid},State = #cars_state{}) ->
-  % TODO: stop and send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State}.
-accelerating(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  % TODO: stop accelerating and send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-accelerating(cast,{ctj,Pid},State = #cars_state{}) ->
-  % TODO: slow down, send message to server and stop\keep going according to traffic light
-  NextStateName = idle,
-  {next_state, NextStateName, State};
-accelerating(cast,{maxS},State = #cars_state{}) ->
-  % TODO: stop accelerating
-  NextStateName = drive_straight,
-  {next_state, NextStateName, State};
-accelerating(cast,{acc,Pid},State = #cars_state{}) ->
-  % TODO: stop and send message to server
-  NextStateName = idle,
-  {next_state, NextStateName, State}.
-
 
 
 turning(cast,{fturn,_},_) ->
@@ -359,7 +414,21 @@ turning(timeout,10,State = #cars_state{}) ->
     D == left, Dir == up, C =< 75 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,st]}]) ;
     D == left, Dir == down, C =< 120 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,st]}]) ;
 
-    true ->   ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]), server:car_finish_turn(self())
+    true ->   ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]),
+      Pid = self(),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{car_finish_turn}),
+        timer:sleep(10);
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{car_finish_turn}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
+              timer:sleep(10);
+            _->  server:car_finish_turn(null,self())
+            %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end
+%      server:car_finish_turn(self())
   end,
   NextStateName = turning,
   {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10};
@@ -385,7 +454,21 @@ turning(timeout,20,State = #cars_state{}) ->
     D == left, Dir == down, C =< 120 -> ets:update_element(cars,P,[{2,[{X - 1,Y },D,R,Type,st]}]) ;
 
 
-    true -> ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]), server:car_finish_turn(self())
+    true -> ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]),
+      Pid = self(),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{car_finish_turn}),
+          timer:sleep(10);
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{car_finish_turn}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
+              timer:sleep(10);
+            _->  server:car_finish_turn(null,self())
+            %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end
+%      server:car_finish_turn(self())
   end,
   NextStateName = turning,
   {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },20};
@@ -400,6 +483,30 @@ turning(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
   % TODO: send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
+
+turning(cast,{send,Who,From,Msg},State = #cars_state{})->
+  {Bool1,To} = check_comms_d(Who,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,From,Msg);
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{From,Msg});
+        _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
+          communication_tower:receive_message(To3,From,Msg) % TODO consider computer split
+
+        %  io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
+      end
+  end,
+  C =State#cars_state.turnCounter,
+
+  Dir = State#cars_state.nextTurnDir,
+  Road = State#cars_state.nextTurnRoad,
+
+  NextStateName = turning,
+  {next_state, NextStateName,#cars_state{turnCounter = C ,nextTurnDir = Dir , nextTurnRoad = Road },get(speed)};
+
+
+
 
 turning(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
@@ -418,7 +525,7 @@ turning(cast,{kill,Pid},State = #cars_state{}) ->
 
 
 
-stopping(cast,{turn,Pid,{Dir, Road}},State = #cars_state{}) ->
+stopping(cast,{turn,_,{Dir, Road}},State = #cars_state{}) ->
   LP = State#cars_state.lightPid,
   NextStateName = stopping,
   {next_state, NextStateName, #cars_state{nextTurnDir = Dir,nextTurnRoad = Road,lightPid = LP},get(speed)};
@@ -462,6 +569,30 @@ stopping(cast,{acc,Pid},State = #cars_state{}) ->
   % TODO: stop and send message to server
   NextStateName = idle,
   {next_state, NextStateName, State};
+
+stopping(cast,{send,Who,From,Msg},State = #cars_state{})->
+  {Bool1,To} = check_comms_d(Who,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,From,Msg);
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{From,Msg});
+        _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
+          communication_tower:receive_message(To3,From,Msg) % TODO consider computer split
+
+        %    io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
+      end
+  end,
+  LP = State#cars_state.lightPid, Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad,
+  case Dir of
+    undefined -> NextStateName = stopping,
+      {next_state, NextStateName, State};
+    _->  NextStateName = stopping,
+      {next_state, NextStateName, #cars_state{lightPid = LP, nextTurnDir = Dir,nextTurnRoad = Road },get(speed)}
+  end;
+
+
+
 stopping(cast,_,State = #cars_state{}) ->
   NextStateName = stopping,
   {next_state, NextStateName, State}.
@@ -521,7 +652,24 @@ bypassing(timeout,20,State = #cars_state{}) ->
     D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R,Type,Turn]}]);
 
 
-    true -> server:car_finish_bypass(self())
+    true ->
+
+      Pid = self(),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{car_finish_bypass}),
+          timer:sleep(10);
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{car_finish_bypass}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
+              timer:sleep(10);
+            _->   server:car_finish_bypass(null,self())
+            %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end
+
+
+%      server:car_finish_bypass(self())
   end,
   NextStateName = bypassing,
   {next_state, NextStateName, #cars_state{bypassCounter = C + 1},20};
@@ -545,10 +693,45 @@ bypassing(timeout,10,State = #cars_state{}) ->
     D == left, C > 300,C =< 326 ->ets:update_element(cars,P,[{2,[{X - 1,Y - 1},D,R,Type,Turn]}]);
 
 
-    true -> server:car_finish_bypass(self())
+    true ->
+      Pid = self(),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
+      case Bool1 of
+        true -> communication_tower:receive_message(To,Pid,{car_finish_bypass}),
+          timer:sleep(10);
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+          case Bool2 of
+            true -> cars:send_msg(To2,{Pid,{car_finish_bypass}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
+              timer:sleep(10);
+            _->   server:car_finish_bypass(null,self())
+            %io:format("sent message to server from ~p that on state ~p~n",[Pid,sys:get_state(Pid)])
+          end
+      end
+
+
+%      server:car_finish_bypass(self())
   end,
   NextStateName = bypassing,
   {next_state, NextStateName, #cars_state{bypassCounter = C + 1},10};
+
+
+bypassing(cast,{send,Who,From,Msg},State = #cars_state{})->
+  {Bool1,To} = check_comms_d(Who,ets:first(comms)),
+  case Bool1 of
+    true -> communication_tower:receive_message(To,From,Msg);
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+      case Bool2 of
+        true -> cars:send_msg(To2,{From,Msg});
+        _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
+          communication_tower:receive_message(To3,From,Msg) % TODO consider computer split
+
+        %     io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
+      end
+  end,
+  C =State#cars_state.bypassCounter,
+  NextStateName = bypassing,
+  {next_state, NextStateName, #cars_state{bypassCounter =  C},get(speed)};
+
 bypassing(cast,{kill,Pid},State = #cars_state{}) ->
   K1 = get(sensor1), K2 = get(sensor2),ets:delete(cars,Pid),
   exit(K1,kill),exit(K2,kill),
@@ -557,7 +740,41 @@ bypassing(cast,{kill,Pid},State = #cars_state{}) ->
   exit(Pid,kill),
   %server:deleteCar(Pid),
   NextStateName = terminate,
-  {next_state, NextStateName, State}.
+  {next_state, NextStateName, State};
+
+bypassing(cast,_,State = #cars_state{}) ->
+  C =State#cars_state.bypassCounter,
+  NextStateName = bypassing,
+  {next_state, NextStateName, #cars_state{bypassCounter =  C},get(speed)}.
+  
+
+
+check_comms_d(_,'$end_of_table') -> {false,nal};
+check_comms_d(Pid,Key)->
+  [{_,[{X,Y},_,_,_,_]}] = ets:lookup(cars,Pid),
+  {X2,Y2} = Key,
+  [{_,[To]}] = ets:lookup(comms,Key),
+
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  if
+    D =< 130 -> {true,To};
+    true -> check_comms_d(Pid,ets:next(comms,Key))
+  end.
+
+
+check_close_car(_,'$end_of_table') -> {false,nal};
+check_close_car(Pid,Key)->
+  [{_,[{X,Y},_,_,_,_]}] = ets:lookup(cars,Pid),
+  [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key),
+
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  if
+    D =< 130, Pid /= Key -> {true,Key};
+    true -> check_close_car(Pid,ets:next(cars,Key))
+  end.
+
+
+
 
 
 %%--------------------------------------------------------------------
@@ -599,7 +816,14 @@ handle_event(_EventType, _EventContent, _StateName, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _StateName, _State) ->
-  ets:delete(cars,self()),
+  %timer:sleep(20),
+
+ % K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3),
+  %server:deleteCar(self()),
+
+%  exit(K1,kill),  exit(K2,kill),  exit(K3,kill),
+  io:format("AAAAAAAAAAAAAAAA"),
+  %ets:delete(cars,self()),
   ok.
 
 %%--------------------------------------------------------------------

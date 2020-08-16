@@ -13,8 +13,8 @@
 -export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,traffic_light_sensor/2]).
 
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
-close_to_car(Pid,FirstKey) -> link(Pid),
-
+close_to_car(Pid,FirstKey) ->
+  
   [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Pid),
   [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey),
   case Dir1 == Dir2 of
@@ -64,11 +64,12 @@ close_to_car(Pid,FirstKey) -> link(Pid),
 
 
 close_to_junction(Pid,'$end_of_table') -> close_to_junction(Pid,ets:first(junction));
-close_to_junction(Pid,FirstKey) ->link(Pid),
-
-
+close_to_junction(Pid,FirstKey) ->
+  
   [{_,[{X,Y},Dir1,R1,_,_]}] = ets:lookup(cars,Pid),
+
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey),
+%  [{{R2,_},[{X2,Y2},LightPid,{_,_}]}] = ets:lookup(junction,FirstKey),
   case R1==R2 of
     false -> close_to_junction(Pid,ets:next(junction,FirstKey));
     _ -> case Dir1 of
@@ -160,18 +161,21 @@ outOfRange(Pid)-> link(Pid),
 traffic_light_sensor(KeyList,'$end_of_table') -> traffic_light_sensor(KeyList,ets:first(junction));
 traffic_light_sensor(KeyList,Key) ->
   [{{R2,J},[{X2,Y2},LightPid]}] =  ets:lookup(junction,Key),
+%  [{{R2,J},[{X2,Y2},LightPid,{_,_}]}] =  ets:lookup(junction,Key),
 
   case LightPid of
     nal -> traffic_light_sensor(KeyList,ets:next(junction,Key));
     _-> case sys:get_state(LightPid) of
           {green,_} -> L = [{Road,Junc}|| {Road,Junc} <- KeyList, J == Junc, Road /= R2],
-          sync_traffic(L), traffic_light:sensor_msg(LightPid,green), timer:sleep(200), traffic_light_sensor(KeyList,ets:next(junction,Key));
+            sync_traffic(L), traffic_light:sensor_msg(LightPid,green), timer:sleep(200), traffic_light_sensor(KeyList,ets:next(junction,Key));
           _-> traffic_light_sensor(KeyList,ets:next(junction,Key))
         end
   end.
 
 sync_traffic([]) -> ok;
-sync_traffic([H|T]) ->  [{{_,_},[{_,_},LightPid]}] =  ets:lookup(junction,H),
+sync_traffic([H|T]) ->
+  [{{_,_},[{_,_},LightPid]}] =  ets:lookup(junction,H),
+%  [{{_,_},[{_,_},LightPid,{_,_}]}] =  ets:lookup(junction,H),
   traffic_light:sensor_msg(LightPid,red),sync_traffic(T).
 
 

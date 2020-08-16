@@ -39,6 +39,8 @@ start_link() ->
   gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
 start(Name,{{R,J},[{X,Y}]}) ->
   gen_statem:start({local,Name}, ?MODULE, {{R,J},[{X,Y}]}, []).
+%start(Name,{{R,J},[{X,Y},{XP,YP}]}) ->
+%  gen_statem:start({local,Name}, ?MODULE, {{R,J},[{X,Y},{XP,YP}]}, []).
 
 %%%===================================================================
 %%% gen_statem callbacks
@@ -50,9 +52,14 @@ start(Name,{{R,J},[{X,Y}]}) ->
 %% process to initialize.
 init([]) ->
   {ok, red, #traffic_light_state{},2000};
+
 init({{R,J},[{X,Y}]}) ->
   ets:insert(junction,{{R,J},[{X,Y},self()]}),
   {ok, red, #traffic_light_state{},2000}.
+
+%init({{R,J},[{X,Y},{XP,YP}]}) ->
+%  ets:insert(junction,{{R,J},[{X,Y},self(),{XP,YP}]}),
+%  {ok, red, #traffic_light_state{},2000}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
