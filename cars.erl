@@ -27,7 +27,7 @@
 
 %%Events
 -export([close_to_car/2,close_to_junc/4,accident/2,slow_down/1,speed_up/1,turn/2,go_straight/1,bypass/1,far_from_car/1]).
--export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,f_turn/1,keepStraight/1,stop/2,kill/1]).
+-export([max_speed/1,finish_turn/1,green_light/2,f_bypass/1,f_turn/1,keepStraight/1,stop/2,kill/1,add_sensor/3]).
 
 %% States
 -export([drive_straight/3,idle/3,turning/3,stopping/3,bypassing/3,start/4,send_msg/2,first_state/3]).
@@ -35,7 +35,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir  ,nextTurnRoad, speed,lightPid,sensor1,sensor2}).
+-record(cars_state, {bypassCounter = 0,turnCounter = 0,nextTurnDir  ,nextTurnRoad, speed,lightPid,sensor1,sensor2,monitor}).
 
 %%%===================================================================
 %%% API
@@ -92,7 +92,7 @@ init([Name,CarMonitor,Start,Type]) ->
   put(speed ,Type),%put(sensor1 ,SensorPid),put(sensor2 ,SensorPid2),
 
 %  {ok,drive_straight, #cars_state{speed = Type },Type}.
-  {ok,first_state, #cars_state{speed = Type },5}.
+  {ok,first_state, #cars_state{speed = Type,monitor = CarMonitor},5}.
 
 
 %%--------------------------------------------------------------------
@@ -128,6 +128,7 @@ keepStraight(Pid) -> gen_statem:cast(Pid,{kst,Pid}).
 stop(Pid,OtherCar) -> gen_statem:cast(Pid,{stop,Pid,OtherCar}).
 kill(Pid) ->  gen_statem:cast(Pid,{kill,Pid}).
 send_msg(Pid,{From,Msg}) -> gen_statem:cast(Pid,{send,Pid,From,Msg}).
+add_sensor(Pid,Sensor,Type) -> gen_statem:cast(Pid,{add_sensor,Pid,Sensor,Type}).
 
 
 
@@ -179,9 +180,13 @@ first_state(timeout,5,State = #cars_state{}) ->
   SensorPid2 = spawn(sensors,close_to_junction,[self(),ets:first(junction)]),
   SensorPid3 = spawn(sensors,outOfRange,[self()]),
   SensorPid4 = spawn(sensors,car_accident,[self(),ets:first(cars)]),
-
+  ets:insert(sensors,{SensorPid,self()}), ets:insert(sensors,{SensorPid2,self()}),
+  ets:insert(sensors,{SensorPid3,self()}), ets:insert(sensors,{SensorPid4,self()}),
   put(sensor1 ,SensorPid), put(sensor2 ,SensorPid2),
   put(sensor3,SensorPid3), put(sensor4,SensorPid4),
+  Monitor = State#cars_state.monitor,
+  Monitor ! {add_to_monitor,SensorPid}, Monitor ! {add_to_monitor,SensorPid2},
+  Monitor ! {add_to_monitor,SensorPid3}, Monitor ! {add_to_monitor,SensorPid4},
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)}.
 
@@ -261,9 +266,11 @@ drive_straight(cast,{ctj,Pid,T,{R,J},LP},_) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-drive_straight(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
+drive_straight(cast,{acc,Pid,_},_) ->
 
-  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4), io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZ~n"),
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
+  %server:deletePid(K1),server:deletePid(K2),server:deletePid(K3),server:deletePid(K4),
+
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),
   io:format("~p~n~p~n~p~n~p~n",[K1,K2,K3,K4]),
   io:format("~p~n~p~n~p~n~p~n",[is_process_alive(K1) ,is_process_alive(K2) ,is_process_alive(K3),is_process_alive(K4) ]),
@@ -272,7 +279,8 @@ drive_straight(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(type),
-
+  timer:sleep(2000),
+  server:deleteCar(Pid),
   {stop,{accident,E1,E2,E3,E4}};
 
 drive_straight(cast,{kst,Pid},State = #cars_state{}) ->
@@ -305,10 +313,17 @@ drive_straight(timeout,10,State = #cars_state{}) ->
   end,
   NextStateName = drive_straight,
   {next_state, NextStateName, State,10};
-drive_straight(cast,{stop,Pid},State = #cars_state{}) ->
-  % TODO: stop
+drive_straight(cast,{stop,_},State = #cars_state{}) ->
   NextStateName = stopping,
   {next_state, NextStateName, State};
+drive_straight(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) ->
+  case Type of
+    close_to_car -> erase(sensor1), put(sensor1,Sensor);
+    car_accident -> erase(sensor4), put(sensor4,Sensor)
+  end,
+  io:format("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~n"),
+  NextStateName = drive_straight,
+  {next_state, NextStateName, State,get(speed)};
 
 drive_straight(cast,{kill,Pid},State = #cars_state{}) ->
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
@@ -339,8 +354,11 @@ idle(cast,{byp,Pid},State = #cars_state{}) ->
   % TODO: start bypassing
   NextStateName = bypassing,
   {next_state, NextStateName, State,get(speed)};
-idle(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
-  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4), io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZ~n"),
+idle(cast,{acc,Pid,_},_) ->
+
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
+  %server:deletePid(K1),server:deletePid(K2),server:deletePid(K3),server:deletePid(K4),
+
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),
   io:format("~p~n~p~n~p~n~p~n",[K1,K2,K3,K4]),
   io:format("~p~n~p~n~p~n~p~n",[is_process_alive(K1) ,is_process_alive(K2) ,is_process_alive(K3),is_process_alive(K4) ]),
@@ -349,8 +367,8 @@ idle(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(type),
-
- 
+  timer:sleep(2000),
+  server:deleteCar(Pid),
   {stop,{accident,E1,E2,E3,E4}};
 
 idle(timeout,20,State = #cars_state{}) ->
@@ -406,7 +424,13 @@ idle(cast,{send,Who,From,Msg},State = #cars_state{})->
   NextStateName = idle,
   {next_state, NextStateName, State,get(speed)};
 
-
+idle(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) ->
+  case Type of
+    close_to_car -> erase(sensor1), put(sensor1,Sensor);
+    car_accident -> erase(sensor4), put(sensor4,Sensor)
+  end,
+  NextStateName = idle,
+  {next_state, NextStateName, State,get(speed)};
 
 
 idle(cast,{kill,Pid},State = #cars_state{}) ->
@@ -519,8 +543,8 @@ turning(cast,{ctj,_,_,_,_},State = #cars_state{}) ->
   NextStateName = turning,
   {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },get(speed)};
 turning(cast,{ctc,Pid,OtherCar},State = #cars_state{}) ->
-  % TODO: send message to server
-  NextStateName = idle,
+  spawn(sensors,far_from_car,[self(),OtherCar]),
+  NextStateName = stopping,
   {next_state, NextStateName, State};
 
 turning(cast,{send,Who,From,Msg},State = #cars_state{})->
@@ -537,7 +561,6 @@ turning(cast,{send,Who,From,Msg},State = #cars_state{})->
       end
   end,
   C =State#cars_state.turnCounter,
-
   Dir = State#cars_state.nextTurnDir,
   Road = State#cars_state.nextTurnRoad,
 
@@ -547,8 +570,11 @@ turning(cast,{send,Who,From,Msg},State = #cars_state{})->
 
 
 
-turning(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
-  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4), io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZ~n"),
+turning(cast,{acc,Pid,_},_) ->
+
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
+  %server:deletePid(K1),server:deletePid(K2),server:deletePid(K3),server:deletePid(K4),
+
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),
   io:format("~p~n~p~n~p~n~p~n",[K1,K2,K3,K4]),
   io:format("~p~n~p~n~p~n~p~n",[is_process_alive(K1) ,is_process_alive(K2) ,is_process_alive(K3),is_process_alive(K4) ]),
@@ -557,9 +583,20 @@ turning(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(type),
-
-  
+  timer:sleep(2000),
+  server:deleteCar(Pid),
   {stop,{accident,E1,E2,E3,E4}};
+
+turning(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) ->
+  C =State#cars_state.turnCounter,
+  Dir = State#cars_state.nextTurnDir,
+  Road = State#cars_state.nextTurnRoad,
+  case Type of
+    close_to_car -> erase(sensor1), put(sensor1,Sensor);
+    car_accident -> erase(sensor4), put(sensor4,Sensor)
+  end,
+  NextStateName = turning,
+  {next_state, NextStateName, State = #cars_state{turnCounter = C,nextTurnRoad = Road,nextTurnDir = Dir},get(speed)};
 
 turning(cast,{kill,Pid},State = #cars_state{}) ->
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
@@ -621,8 +658,11 @@ stopping(cast,{ctj,_,_,_,_},State = #cars_state{}) ->
 stopping(cast,{far,_},State = #cars_state{}) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, State,get(speed)};
-stopping(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
-  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4), io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZ~n"),
+stopping(cast,{acc,Pid,_},_) ->
+
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
+  %server:deletePid(K1),server:deletePid(K2),server:deletePid(K3),server:deletePid(K4),
+
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),
   io:format("~p~n~p~n~p~n~p~n",[K1,K2,K3,K4]),
   io:format("~p~n~p~n~p~n~p~n",[is_process_alive(K1) ,is_process_alive(K2) ,is_process_alive(K3),is_process_alive(K4) ]),
@@ -631,8 +671,8 @@ stopping(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(type),
-
-  
+  timer:sleep(2000),
+  server:deleteCar(Pid),
   {stop,{accident,E1,E2,E3,E4}};
 
 
@@ -657,6 +697,18 @@ stopping(cast,{send,Who,From,Msg},State = #cars_state{})->
       {next_state, NextStateName, #cars_state{lightPid = LP, nextTurnDir = Dir,nextTurnRoad = Road },get(speed)}
   end;
 
+stopping(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) ->
+  case Type of
+    close_to_car -> erase(sensor1), put(sensor1,Sensor);
+    car_accident -> erase(sensor4), put(sensor4,Sensor)
+  end,
+  LP = State#cars_state.lightPid, Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad,
+  case Dir of
+    undefined -> NextStateName = stopping,
+      {next_state, NextStateName, State};
+    _->  NextStateName = stopping,
+      {next_state, NextStateName, #cars_state{lightPid = LP, nextTurnDir = Dir,nextTurnRoad = Road },get(speed)}
+  end;
 
 stopping(cast,{kill,Pid},State = #cars_state{}) ->
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
@@ -712,8 +764,11 @@ bypassing(timeout,8,State = #cars_state{}) ->
 bypassing(cast,{fByp,_},_) ->
   NextStateName = drive_straight,
   {next_state, NextStateName, #cars_state{bypassCounter = 0},get(speed)};
-bypassing(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
-  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4), io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZ~n"),
+bypassing(cast,{acc,Pid,_},_) ->
+
+  K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),
+  %server:deletePid(K1),server:deletePid(K2),server:deletePid(K3),server:deletePid(K4),
+
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),
   io:format("~p~n~p~n~p~n~p~n",[K1,K2,K3,K4]),
   io:format("~p~n~p~n~p~n~p~n",[is_process_alive(K1) ,is_process_alive(K2) ,is_process_alive(K3),is_process_alive(K4) ]),
@@ -722,8 +777,8 @@ bypassing(cast,{acc,Pid,OtherCar},State = #cars_state{}) ->
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(type),
-
-
+  timer:sleep(2000),
+  server:deleteCar(Pid),
   {stop,{accident,E1,E2,E3,E4}};
 
 bypassing(timeout,20,State = #cars_state{}) ->
@@ -821,6 +876,15 @@ bypassing(cast,{send,Who,From,Msg},State = #cars_state{})->
 
         %     io:format("sent message to communication_tower from ~p that on state ~p~n",[self(),sys:get_state(self())])
       end
+  end,
+  C =State#cars_state.bypassCounter,
+  NextStateName = bypassing,
+  {next_state, NextStateName, #cars_state{bypassCounter =  C},get(speed)};
+
+bypassing(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) ->
+  case Type of
+    close_to_car -> erase(sensor1), put(sensor1,Sensor);
+    car_accident -> erase(sensor4), put(sensor4,Sensor)
   end,
   C =State#cars_state.bypassCounter,
   NextStateName = bypassing,

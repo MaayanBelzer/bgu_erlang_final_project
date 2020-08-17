@@ -175,33 +175,39 @@ close_to_junction(Pid,FirstKey) ->
   end.
 
 
-far_from_car(Who,Other_car) ->link(Who),
+far_from_car(Who,Other_car) ->
   [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Who),
-  [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Other_car),
-  case Dir1 of
-    left -> D = X-X2, if
-                        D >= 100  -> cars:far_from_car(Who);
-                        true -> far_from_car(Who,Other_car)
-                      end;
+  Bool = ets:member(cars,Other_car),
+  if
+    Bool == true -> [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Other_car),
+      case Dir1 of
+        left -> D = X-X2, if
+                            D >= 100  -> cars:far_from_car(Who);
+                            true -> far_from_car(Who,Other_car)
+                          end;
 
-    right ->  D = X2-X, if
-                          D >= 100  -> cars:far_from_car(Who);
-                          true -> far_from_car(Who,Other_car)
-                        end;
+        right ->  D = X2-X, if
+                              D >= 100  -> cars:far_from_car(Who);
+                              true -> far_from_car(Who,Other_car)
+                            end;
 
-    up ->  D = Y-Y2, if
-                       D >= 100  -> cars:far_from_car(Who);
-                       true -> far_from_car(Who,Other_car)
-                     end;
+        up ->  D = Y-Y2, if
+                           D >= 100  -> cars:far_from_car(Who);
+                           true -> far_from_car(Who,Other_car)
+                         end;
 
-    down ->  D = Y2-Y, if
-                         D >= 100  -> cars:far_from_car(Who);
-                         true -> far_from_car(Who,Other_car)
-                       end
+        down ->  D = Y2-Y, if
+                             D >= 100  -> cars:far_from_car(Who);
+                             true -> far_from_car(Who,Other_car)
+                           end
 
+      end;
+    true -> cars:far_from_car(Who)
   end.
 
-outOfRange(Pid)-> link(Pid),
+
+
+outOfRange(Pid)->
   [{_,[{X,Y},Dir,Road,_,_]}] = ets:lookup(cars,Pid),
   if
     X < 0; Y < 0; X > 1344; Y > 890 ->cars:kill(Pid);
@@ -276,17 +282,12 @@ car_monitor() ->
                                  move_to_comp3 -> [];
                                  move_to_comp4 -> [];
                                  {accident,E1,E2,E3,E4} -> io:format("~p killed in accident ~n",[Pid]),
-                                   case ets:member(cars,Pid) of
-                                     true -> timer:sleep(1000),
-                                       ets:delete(cars,Pid);
-                                     _->io:format("~p is in ets: ~p ~n",[Pid,ets:member(cars,Pid)])
-                                   end,
-
-
-                                   car_monitor();
+                                 cars:start(E1,E2,E4,E3),car_monitor();
+                                 {badarg, [_, {_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),
+                                   SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor();
+                                 {badarg, [_, {_,car_accident,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),
+                                   SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor();
                                  Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),
-                                   timer:sleep(1000),
-                                   server:deleteCar(Pid),
                                    car_monitor()
                                end
 

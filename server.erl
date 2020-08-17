@@ -23,7 +23,7 @@
   code_change/3]).
 
 % gen_server events
--export([s_accident/3,s_close_to_car/3,s_fallen_car/2,s_into_range/2,s_light/3,s_out_of_range/2,start/0,car_finish_bypass/2,car_finish_turn/2,deleteCar/1]).
+-export([s_accident/3,s_close_to_car/3,s_fallen_car/2,s_into_range/2,s_light/3,s_out_of_range/2,start/0,car_finish_bypass/2,car_finish_turn/2,deleteCar/1,deletePid/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -152,7 +152,7 @@ init([]) ->
 %  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
   traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
-  traffic_light:start(r18b,{{r18,b},[{902,66}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  traffic_light:start(r18b,{{r18,b},[{902,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
 
   FirstKey = ets:first(junction),
@@ -177,6 +177,7 @@ init([]) ->
   communication_tower:start(com4_3,{1121,707}),
 
   CarMonitor = spawn(sensors,car_monitor,[]),
+  ets:new(sensors,[set,public,named_table]),
 
   cars:start(a,CarMonitor,10,[{874,0},down,r18,red,st]),
   cars:start(b,CarMonitor,20,[{0,651},right,r9,grey,st]),
@@ -213,6 +214,7 @@ car_finish_turn(Comm,Who) ->
 %  cars:f_turn(Who).
 
 deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}).
+deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}).
 
 
 
@@ -253,6 +255,15 @@ handle_cast({del,Pid},State) ->
   io:format("BBBBBBBBBB~n") ,
 
   ets:delete(cars,Pid),
+
+  {noreply, State};
+handle_cast({delP,Pid},State) ->
+  exit(Pid,kill),
+  % timer:sleep(2000),
+  io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
+  io:format("VVVVVVVVVVVVVVVVVVVVVVVVVVV~n") ,
+
+
 
   {noreply, State};
 
