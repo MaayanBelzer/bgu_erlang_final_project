@@ -96,8 +96,10 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DrawTrafficA1, BmpTrafficLight, {1130, 35}),%%%%%%%%%%%%%%%%%%%%%%
   DrawTrafficA2 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficA2, BmpTrafficLight, {1130, 135}),%%%%%%%%%%%
-  DrawTrafficB = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficB, BmpTrafficLight, {847, 35}),%%%%%%%%%%%%%%%%%%%%%
+  DrawTrafficB1 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawTrafficB1, BmpTrafficLight, {847, 35}),%%%%%%%%%%%%%%%%%%%%%
+  DrawTrafficB2 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawTrafficB2, BmpTrafficLight, {917, 35}),%%%%%%%%%%%%%%%%%%%%%
   DrawTrafficC1 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficC1, BmpTrafficLight, {634, 35}),%%%%%%%%%%%%%%%%%%%%
   DrawTrafficC2 = wxClientDC:new(Panel),

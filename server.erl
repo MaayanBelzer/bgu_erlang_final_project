@@ -176,15 +176,16 @@ init([]) ->
   communication_tower:start(com4_2,{868,717}),
   communication_tower:start(com4_3,{1121,707}),
 
+  CarMonitor = spawn(sensors,car_monitor,[]),
 
-  cars:start(a,10,[{874,0},down,r18,red,st]),
-  cars:start(b,20,[{0,651},right,r9,grey,st]),
-  cars:start(d,20,[{623,890},up,r4,red,st]),
-  cars:start(c,10,[{405,890},up,r14,grey,st]),
-  cars:start(e,10,[{101,0},down,r2,red,st]),
-  cars:start(f,20,[{1344,93},left,r1,red,st]),
-  cars:start(g,10,[{0,417},right,r3,red,st]),
-  cars:start(h,20,[{1117,890},up,r6,red,st]),
+  cars:start(a,CarMonitor,10,[{874,0},down,r18,red,st]),
+  cars:start(b,CarMonitor,20,[{0,651},right,r9,grey,st]),
+  cars:start(d,CarMonitor,20,[{623,890},up,r4,red,st]),
+  cars:start(c,CarMonitor,10,[{405,890},up,r14,grey,st]),
+  cars:start(e,CarMonitor,10,[{101,0},down,r2,red,st]),
+  cars:start(f,CarMonitor,20,[{1344,93},left,r1,red,st]),
+  cars:start(g,CarMonitor,10,[{0,417},right,r3,red,st]),
+  cars:start(h,CarMonitor,20,[{1117,890},up,r6,red,st]),
 
 
   roadGraph(),
@@ -211,8 +212,9 @@ car_finish_turn(Comm,Who) ->
   end.
 %  cars:f_turn(Who).
 
-deleteCar(Pid)-> timer:sleep(5000),
- ets:delete(cars,Pid).
+deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}).
+
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -245,6 +247,14 @@ handle_call(_Request, _From, State) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 %handle_cast(_Request, State) ->
 %  {noreply, State}.
+handle_cast({del,Pid},State) ->
+  % timer:sleep(2000),
+  io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
+  io:format("BBBBBBBBBB~n") ,
+
+  ets:delete(cars,Pid),
+
+  {noreply, State};
 
 handle_cast({light,Comm,Who,{_,J}}, State) -> % TODO: decide whether the car turns left, right or straight
 
@@ -385,54 +395,54 @@ checkBypass2(Who,Key) ->
     false -> checkBypass2(Who,ets:next(junction,Key));
     _ -> case Dir1 of
            left -> D = X-X2, if
-                                    D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                                    D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                      L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                      L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                      case L2 of
-                                        [] -> false;
-                                        _ -> checkBypass2(Who,ets:next(junction,Key))
-                                      end;
-                                    D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
-                                    true -> false
-                                  end;
+                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                 case L2 of
+                                   [] -> false;
+                                   _ -> checkBypass2(Who,ets:next(junction,Key))
+                                 end;
+                               D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                               true -> false
+                             end;
 
            right ->  D = X2-X, if
-                                      D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                                      D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                        L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                        L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                        case L2 of
-                                          [] -> false;
-                                          _ -> checkBypass2(Who,ets:next(junction,Key))
-                                        end;
-                                      D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
-                                      true -> false
-                                    end;
+                                 D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                                 D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                   L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                   L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                   case L2 of
+                                     [] -> false;
+                                     _ -> checkBypass2(Who,ets:next(junction,Key))
+                                   end;
+                                 D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                                 true -> false
+                               end;
            up ->  D = Y-Y2, if
-                                   D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                                   D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                     L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                     L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                     case L2 of
-                                       [] -> false;
-                                       _ -> checkBypass2(Who,ets:next(junction,Key))
-                                     end;
-                                   D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
-                                   true ->false
-                                 end;
+                              D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                              D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                case L2 of
+                                  [] -> false;
+                                  _ -> checkBypass2(Who,ets:next(junction,Key))
+                                end;
+                              D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                              true ->false
+                            end;
            down -> D = Y2-Y, if
-                                    D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                                    D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                      L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                      L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                      case L2 of
-                                        [] -> false;
-                                        _ -> checkBypass2(Who,ets:next(junction,Key))
-                                      end;
-                                    D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
-                                    true ->false
-                                  end
+                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                 case L2 of
+                                   [] -> false;
+                                   _ -> checkBypass2(Who,ets:next(junction,Key))
+                                 end;
+                               D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                               true ->false
+                             end
          end
   end.
 

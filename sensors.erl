@@ -10,50 +10,100 @@
 -author("maayan").
 
 %% API
--export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,traffic_light_sensor/2]).
+-export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,
+  traffic_light_sensor/2,car_accident/2,car_monitor/0]).
 
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
 close_to_car(Pid,FirstKey) ->
-  
+
+
   [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Pid),
-  [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey),
+  Bool = ets:member(cars,FirstKey),
+  if
+    Bool == true->
+      Bool2 = ets:member(cars,FirstKey),
+      if
+        Bool2 == true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey);
+        true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+      end;
+
+
+    true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+  end,
+%  [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey),
   case Dir1 == Dir2 of
-    false -> close_to_car(Pid,ets:next(cars,P2));
+    false -> case ets:member(cars,P2) of
+               true -> close_to_car(Pid,ets:next(cars,P2));
+               _-> close_to_car(Pid,ets:first(cars))
+             end;
+    %close_to_car(Pid,ets:next(cars,P2));
     _ ->  case Dir1 of
-            left -> case abs(Y-Y2)=<5  of
-                      false -> close_to_car(Pid,ets:next(cars,P2));
+            left -> case abs(Y-Y2)=<7  of
+                      false -> case ets:member(cars,P2) of
+                                 true -> close_to_car(Pid,ets:next(cars,P2));
+                                 _-> close_to_car(Pid,ets:first(cars))
+                               end;
+                      %close_to_car(Pid,ets:next(cars,P2));
                       _ -> D = X-X2, if
                                        D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2),
                                          timer:sleep(3000),
                                          close_to_car(Pid,ets:first(cars));
-                                       true -> close_to_car(Pid,ets:next(cars,P2))
+                                       true -> case ets:member(cars,P2) of
+                                                 true -> close_to_car(Pid,ets:next(cars,P2));
+                                                 _-> close_to_car(Pid,ets:first(cars))
+                                               end
+                      %close_to_car(Pid,ets:next(cars,P2))
                                      end
                     end;
-            right -> case abs(Y-Y2)=<5 of
-                       false -> close_to_car(Pid,ets:next(cars,P2));
+            right -> case abs(Y-Y2)=<7 of
+                       false -> case ets:member(cars,P2) of
+                                  true -> close_to_car(Pid,ets:next(cars,P2));
+                                  _-> close_to_car(Pid,ets:first(cars))
+                                end;
+                       %close_to_car(Pid,ets:next(cars,P2));
                        _ -> D = X2-X, if
                                         D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2),
                                           timer:sleep(3000),
                                           close_to_car(Pid,ets:first(cars));
-                                        true -> close_to_car(Pid,ets:next(cars,P2))
+                                        true -> case ets:member(cars,P2) of
+                                                  true -> close_to_car(Pid,ets:next(cars,P2));
+                                                  _-> close_to_car(Pid,ets:first(cars))
+                                                end
+                       %close_to_car(Pid,ets:next(cars,P2))
                                       end
                      end;
-            up -> case abs(X-X2)=<5  of
-                    false -> close_to_car(Pid,ets:next(cars,P2));
+            up -> case abs(X-X2)=<7  of
+                    false -> case ets:member(cars,P2) of
+                               true -> close_to_car(Pid,ets:next(cars,P2));
+                               _-> close_to_car(Pid,ets:first(cars))
+                             end;
+                    %close_to_car(Pid,ets:next(cars,P2));
                     _ -> D = Y-Y2, if
                                      D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2),
                                        timer:sleep(3000),
                                        close_to_car(Pid,ets:first(cars));
-                                     true -> close_to_car(Pid,ets:next(cars,P2))
+                                     true -> case ets:member(cars,P2) of
+                                               true -> close_to_car(Pid,ets:next(cars,P2));
+                                               _-> close_to_car(Pid,ets:first(cars))
+                                             end
+                    %close_to_car(Pid,ets:next(cars,P2))
                                    end
                   end;
-            down -> case abs(X-X2)=<5 of
-                      false -> close_to_car(Pid,ets:next(cars,P2));
+            down -> case abs(X-X2)=<7 of
+                      false -> case ets:member(cars,P2) of
+                                 true -> close_to_car(Pid,ets:next(cars,P2));
+                                 _-> close_to_car(Pid,ets:first(cars))
+                               end;
+                      %close_to_car(Pid,ets:next(cars,P2));
                       _ -> D = Y2-Y, if
                                        D =< 60 , D >= 0, P2 /= Pid -> cars:close_to_car(Pid,P2),
                                          timer:sleep(3000),
                                          close_to_car(Pid,ets:first(cars));
-                                       true -> close_to_car(Pid,ets:next(cars,P2))
+                                       true -> case ets:member(cars,P2) of
+                                                 true -> close_to_car(Pid,ets:next(cars,P2));
+                                                 _-> close_to_car(Pid,ets:first(cars))
+                                               end
+                      %close_to_car(Pid,ets:next(cars,P2))
                                      end
                     end
           end
@@ -65,10 +115,13 @@ close_to_car(Pid,FirstKey) ->
 
 close_to_junction(Pid,'$end_of_table') -> close_to_junction(Pid,ets:first(junction));
 close_to_junction(Pid,FirstKey) ->
-  
+
+
+
   [{_,[{X,Y},Dir1,R1,_,_]}] = ets:lookup(cars,Pid),
 
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey),
+
 %  [{{R2,_},[{X2,Y2},LightPid,{_,_}]}] = ets:lookup(junction,FirstKey),
   case R1==R2 of
     false -> close_to_junction(Pid,ets:next(junction,FirstKey));
@@ -120,7 +173,6 @@ close_to_junction(Pid,FirstKey) ->
 
          end
   end.
-
 
 
 far_from_car(Who,Other_car) ->link(Who),
@@ -179,3 +231,61 @@ sync_traffic([H|T]) ->
   traffic_light:sensor_msg(LightPid,red),sync_traffic(T).
 
 
+car_accident(Pid,'$end_of_table') -> car_accident(Pid,ets:first(cars));
+car_accident(Pid,Key) ->
+  [{_,[{X,Y},_,_,_,_]}] = ets:lookup(cars,Pid),
+  Bool = ets:member(cars,Key),
+  if
+    Bool == true->
+      Bool2 = ets:member(cars,Key),
+      if
+        Bool2 == true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key);
+        true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+      end;
+    true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+  end,
+
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  if
+    D =< 20, Pid /= P2 -> %io:format("ACCIDENT between ~p and ~p ~n",[Pid,P2]),
+      cars:accident(Pid,P2),cars:accident(P2,Pid);
+      % cars:kill(Pid),cars:kill(P2);%cars:accident(Pid,P2) ;
+    true ->  case ets:member(cars,P2) of
+               true ->  car_accident(Pid,ets:next(cars,P2));
+               _-> car_accident(Pid,ets:first(cars))
+             end
+
+  end.
+
+
+
+car_monitor() ->
+
+  receive
+    {add_to_monitor,Pid} -> monitor(process, Pid),car_monitor();
+      %io:format("~p is alive ~n",[Pid]),car_monitor();
+    {_, _, _, Pid, Reason} ->  case Reason of
+                                 {outOfRange,E1,E2,E3,E4} ->
+                                   %io:format("~p killed with reason outOfRange ~n",[Pid]),
+                                   %io:format("~p~n~p~n~p~n~p~n",[E1,E2,E3,E4]),
+                                   cars:start(E1,E2,E4,E3),car_monitor();
+
+
+                                 move_to_comp1 -> [];
+                                 move_to_comp2 -> [];
+                                 move_to_comp3 -> [];
+                                 move_to_comp4 -> [];
+                                 {accident,E1,E2,E3,E4} -> io:format("~p killed in accident ~n",[Pid]),
+                                   case ets:member(cars,Pid) of
+                                     true -> timer:sleep(1000),
+                                       ets:delete(cars,Pid);
+                                     _->io:format("~p is in ets: ~p ~n",[Pid,ets:member(cars,Pid)])
+                                   end,
+
+
+                                   car_monitor();
+                                 Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),car_monitor()
+                               end
+
+    after 0 -> car_monitor()
+  end .
