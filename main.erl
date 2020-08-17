@@ -22,7 +22,7 @@
 
 -define(SERVER, ?MODULE).
 %-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,key}).
--record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,key}).
+-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
 %%%-------------------------------------------------------------------
 start() ->
   wx_object:start({local,?SERVER},?MODULE,[],[]).
@@ -36,7 +36,7 @@ init([]) ->
   Paint = wxBufferedPaintDC:new(Panel),
   % create bitmap to all images
 %  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight}=createBitMaps(),
-  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed}=createBitMaps(),
+  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}=createBitMaps(),
 
 
   % connect panel
@@ -64,7 +64,7 @@ init([]) ->
 %    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight }}.
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed }}.
+    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower}}.
 %%%-------------------------------------------------------------------
 
 handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) ->                                                 % close window event
@@ -81,7 +81,7 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
 
 handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
   bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-  bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed}) ->
+  bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed, bmpCommTower = BmpCommTower}) ->
 
 %handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
 %  bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
@@ -152,6 +152,37 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, pane
   wxDC:drawBitmap(DrawTrafficO1, BmpTrafficLight, {75, 575}),%%%%%%%%%%%%%%%
   DrawTrafficO2 = wxClientDC:new(Panel),
   wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),%%%%%%%%%%%
+
+  DrawComm1 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm1, BmpCommTower, {1036, 38}),%%%%%%%%%%%%%%%%%%%%
+  DrawComm2 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm2, BmpCommTower, {793, 38}),%%%%%%%%%%%%%%%%%%%%%
+  DrawComm3 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm3, BmpCommTower, {822, 336}),%%%%%%%%%%%%%%%
+  DrawComm4 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm4, BmpCommTower, {1200, 336}),%%%%%%%%%%%%%%%%%%
+  DrawComm5 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm5, BmpCommTower, {483, 38}),%%%%%%%%%%%%%%%%%%
+  DrawComm6 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm6, BmpCommTower, {180, 38}),%%%%%%%%%%%%%%%%%
+  DrawComm7 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm7, BmpCommTower, {483, 336}),%%%%%%%%%%%%%%%%%%%%
+  DrawComm8 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm8, BmpCommTower, {180, 336}),%%%%%%%%%%%%%%%%%%%%%%%
+  DrawComm9 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm9, BmpCommTower, {20, 580}),%%%%%%%%%%%%%%%%%%%%%%%%%
+  DrawComm10 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm10, BmpCommTower, {255, 580}),%%%%%%%%%%%%%%%%%%%%%%%%
+  DrawComm11 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm11, BmpCommTower, {547, 523}),%%%%%%%%%%%%%%%%%%%%
+  DrawComm12 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm12, BmpCommTower, {547, 763}),%%%%%%%%%%%%%%%%%%%%%%%
+  DrawComm13 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm13, BmpCommTower, {817, 711}),%%%%%%%%%%%%%%%%%%%%
+  DrawComm14 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm14, BmpCommTower, {988, 550}),%%%%%%%%%%%%%%%%%%%%
+  DrawComm15 = wxClientDC:new(Panel),
+  wxDC:drawBitmap(DrawComm15, BmpCommTower, {1151, 743}),%%%%%%%%%%%%%%%%%%%%
 
 %  printTtafficLight(ets:first(junction),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed),
   printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
@@ -311,8 +342,14 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(TrafficLightR),
   wxImage:destroy(TrafficLightcR),
 
+  CommTower = wxImage:new("comm.png"),
+  CommTowerc = wxImage:scale(CommTower,40,50),
+  BmpCommTower = wxBitmap:new(CommTowerc),
+  wxImage:destroy(CommTower),
+  wxImage:destroy(CommTowerc),
+
 %  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight}.
-  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed}.
+  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}.
 
 
 search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
