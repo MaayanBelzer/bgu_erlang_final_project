@@ -248,7 +248,7 @@ car_accident(Pid,Key) ->
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
     D =< 20, Pid /= P2 -> %io:format("ACCIDENT between ~p and ~p ~n",[Pid,P2]),
-      cars:accident(Pid,P2),cars:accident(P2,Pid);
+      cars:accident(Pid,P2);
       % cars:kill(Pid),cars:kill(P2);%cars:accident(Pid,P2) ;
     true ->  case ets:member(cars,P2) of
                true ->  car_accident(Pid,ets:next(cars,P2));
@@ -266,7 +266,7 @@ car_monitor() ->
       %io:format("~p is alive ~n",[Pid]),car_monitor();
     {_, _, _, Pid, Reason} ->  case Reason of
                                  {outOfRange,E1,E2,E3,E4} ->
-                                   %io:format("~p killed with reason outOfRange ~n",[Pid]),
+                                   io:format("~p killed with reason outOfRange ~n",[Pid]),
                                    %io:format("~p~n~p~n~p~n~p~n",[E1,E2,E3,E4]),
                                    cars:start(E1,E2,E4,E3),car_monitor();
 
@@ -284,7 +284,10 @@ car_monitor() ->
 
 
                                    car_monitor();
-                                 Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),car_monitor()
+                                 Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),
+                                   timer:sleep(1000),
+                                   server:deleteCar(Pid),
+                                   car_monitor()
                                end
 
     after 0 -> car_monitor()
