@@ -13,9 +13,9 @@
 -export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,
   traffic_light_sensor/2,car_accident/2,car_monitor/0]).
 
+
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
 close_to_car(Pid,FirstKey) ->
-
 
   [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Pid),
   Bool = ets:member(cars,FirstKey),

@@ -108,7 +108,7 @@ callback_mode() ->
   state_functions.
 
 %% Events
-close_to_car(Pid,OtherCar) -> gen_statem:cast(Pid,{ctc,Pid,OtherCar}).
+close_to_car(Pid,OtherCar) -> gen_statem:cast(Pid,{ctc,Pid,OtherCar}).%
 close_to_junc(Pid,LightState,{R,J},LP) -> gen_statem:cast(Pid,{ctj,Pid,LightState,{R,J},LP}).
 accident(Pid,OtherCar) ->   io:format("ACCIDENT between ~p and ~p ~n",[Pid,OtherCar]),gen_statem:cast(Pid,{acc,Pid,OtherCar}).
 slow_down(Pid) -> gen_statem:cast(Pid,{slow,Pid}).%%%%%%%%%%%%%%%%% delete

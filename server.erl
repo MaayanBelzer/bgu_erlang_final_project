@@ -65,7 +65,7 @@ start() ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  ets:new(cars,[set,public,named_table]),
+  ets:new(cars,[set,public,named_table]),%
 
   %Pid = spawn(cars,start,[1]),
   %io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
@@ -152,7 +152,9 @@ init([]) ->
 %  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
   traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
+
   traffic_light:start(r18b,{{r18,b},[{902,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
 
   FirstKey = ets:first(junction),
@@ -406,6 +408,7 @@ checkBypass2(Who,Key) ->
     false -> checkBypass2(Who,ets:next(junction,Key));
     _ -> case Dir1 of
            left -> D = X-X2, if
+
                                D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
                                D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
                                  L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
@@ -454,6 +457,7 @@ checkBypass2(Who,Key) ->
                                D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
                                true ->false
                              end
+
          end
   end.
 

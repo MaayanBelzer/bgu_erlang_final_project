@@ -45,7 +45,7 @@ init([]) ->
 
 
 
-  % erlang:send_after(?TIMER, self(), timer),
+  % erlang:send_after(?TIMER, self(), timer),%
   wxPanel:connect(Panel, paint, [callback]),
   wxPanel:connect (Panel, left_down),
 %  wxPanel:connect (Panel, right_down),
@@ -64,7 +64,9 @@ init([]) ->
 %    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight }}.
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
+
     bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower}}.
+
 %%%-------------------------------------------------------------------
 
 handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) ->                                                 % close window event
@@ -349,7 +351,9 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(CommTowerc),
 
 %  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight}.
+
   {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}.
+
 
 
 search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
@@ -357,7 +361,9 @@ search_close_car(Key,{X,Y}) ->
   [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key),
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
+
     D =< 40 -> io:format("~p~n",[Key]),io:format("~p~n",[sys:get_state(Key)]), ok;
+
     true-> search_close_car(ets:next(cars,Key),{X,Y})
   end.
 

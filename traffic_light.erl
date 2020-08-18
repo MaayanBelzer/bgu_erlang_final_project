@@ -51,7 +51,9 @@ start(Name,{{R,J},[{X,Y}]}) ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init([]) ->
+
   {ok, red, #traffic_light_state{},2000};
+
 
 init({{R,J},[{X,Y}]}) ->
   ets:insert(junction,{{R,J},[{X,Y},self()]}),
