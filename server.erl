@@ -65,7 +65,7 @@ start() ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  ets:new(cars,[set,public,named_table]),
+  ets:new(cars,[set,public,named_table]),%
 
   %Pid = spawn(cars,start,[1]),
   %io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
@@ -83,41 +83,77 @@ init([]) ->
 
 
   traffic_light:start(r1a,{{r1,a},[{1137,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1a,{{r1,a},[{1137,120},{1130, 35}]}),
   traffic_light:start(r1b,{{r1,b},[{938,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1b,{{r1,b},[{938,120},{847, 35}]}),
   ets:insert(junction,{{r1,t},[{799,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r1,t},[{799,120},nal,{nal,nal}]}),
   traffic_light:start(r1c,{{r1,c},[{638,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1c,{{r1,c},[{638,120},{634, 35}]}),
   ets:insert(junction,{{r1,s},[{420,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r1,s},[{420,120},nal,{nal,nal}]}),
   traffic_light:start(r1d,{{r1,d},[{302,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r1d,{{r1,d},[{302,120},{280, 35}]}),
   traffic_light:start(r1e,{{r1,e},[{164,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r1e,{{r1,e},[{164,120},{138, 35}]}),
   traffic_light:start(r2e,{{r2,e},[{128,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r2e,{{r2,e},[{128,75},{75, 35}]}),
   traffic_light:start(r2f,{{r2,f},[{128,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r2f,{{r2,f},[{128,355},{75, 330}]}),
   traffic_light:start(r2o,{{r2,o},[{128,590}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r2o,{{r2,o},[{128,590},{75, 575}]}),
   traffic_light:start(r3f,{{r3,f},[{81,418}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r3f,{{r3,f},[{81,418},{75, 426}]}),
   ets:insert(junction,{{r3,r},[{204,418},nal]}),%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r3,r},[{204,418},nal,{nal,nal}]}),
   traffic_light:start(r3g,{{r3,g},[{372,418}]}),%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3g,{{r3,g},[{372,418},{355, 426}]}),
   traffic_light:start(r3h,{{r3,h},[{560,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3h,{{r3,h},[{560,418},{571, 426}]}),
   traffic_light:start(r3i,{{r3,i},[{728,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3i,{{r3,i},[{728,418},{713, 420}]}),
   ets:insert(junction,{{r3,u},[{860,418},nal]}),%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r3,u},[{860,418},nal,{nal,nal}]}),
   traffic_light:start(r3j,{{r3,j},[{1055,418}]}),%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r3j,{{r3,j},[{1055,418},{1067, 426}]}),
   traffic_light:start(r4l,{{r4,l},[{625,820}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4l,{{r4,l},[{625,820},{634, 790}]}),
   traffic_light:start(r4m,{{r4,m},[{625,689}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4m,{{r4,m},[{625,689},{418, 660}]}),
   traffic_light:start(r4h,{{r4,h},[{590,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4h,{{r4,h},[{590,433},{634, 426}]}),
   traffic_light:start(r4c,{{r4,c},[{625,154}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4c,{{r4,c},[{625,154},{634, 135}]}),
   traffic_light:start(r5k,{{r5,k},[{1058,640}]}),%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r5k,{{r5,k},[{1058,640},{1067, 660}]}),
   traffic_light:start(r6k,{{r6,k},[{1122,671}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6k,{{r6,k},[{1122,671},{1130, 660}]}),
   traffic_light:start(r6j,{{r6,j},[{1122,434}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6j,{{r6,j},[{1122,434},{1130, 426}]}),
   traffic_light:start(r6a,{{r6,a},[{1122,154}]}),%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6a,{{r6,a},[{1122,154},{1130, 135}]}),
   traffic_light:start(r7l,{{r7,l},[{640,787}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r7l,{{r7,l},[{640,787},{634, 710}]}),
   traffic_light:start(r8d,{{r8,d},[{266,154}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r8d,{{r8,d},[{266,154},{280, 135}]}),
   traffic_light:start(r9o,{{r9,o},[{80,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% traffic_light:start(r9o,{{r9,o},[{80,655},{75, 660}]}),
   traffic_light:start(r9n,{{r9,n},[{342,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r9n,{{r9,n},[{342,655},{571, 660}]}),
   traffic_light:start(r9m,{{r9,m},[{560,655}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r9m,{{r9,m},[{560,655},{355, 660}]}),
   traffic_light:start(r10i,{{r10,i},[{763,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r10i,{{r10,i},[{763,355},{713, 330}]}),
   ets:insert(junction,{{r12,p},[{902,590},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r12,p},[{902,590},nal,{nal,nal}]}),
   ets:insert(junction,{{r12,q},[{902,745},nal]}),%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r12,q},[{902,745},nal,{nal,nal}]}),
   traffic_light:start(r14n,{{r14,n},[{407,670}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
   traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
   traffic_light:start(r18b,{{r18,b},[{902,66}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
 
   FirstKey = ets:first(junction),
   KeyList = keys(junction, FirstKey, [FirstKey]),
@@ -295,54 +331,59 @@ checkBypass2(_,'$end_of_table') -> true;
 checkBypass2(Who,Key) ->
   [{_,[{X,Y},Dir1,R,_,_]}] =  ets:lookup(cars,Who),
   [{{R2,J},[{X2,Y2},_]}] = ets:lookup(junction,Key),
+%  [{{R2,J},[{X2,Y2},_,{_,_}]}] = ets:lookup(junction,Key),
   case R == R2 of
     false -> checkBypass2(Who,ets:next(junction,Key));
     _ -> case Dir1 of
-           left -> D = abs(X-X2), if
-                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road], 
-                                 case L2 of
-                                   [] -> false;
-                                   _ -> checkBypass2(Who,ets:next(junction,Key))
-                                 end;
-                               true -> false
-                             end;
+           left -> D = X-X2, if
+                                    D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                                    D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                      L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                      L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                      case L2 of
+                                        [] -> false;
+                                        _ -> checkBypass2(Who,ets:next(junction,Key))
+                                      end;
+                                    D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                                    true -> false
+                                  end;
 
-           right ->  D = abs(X2-X), if
-                                 D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                                 D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                   L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                   L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                   case L2 of
-                                     [] -> false;
-                                     _ -> checkBypass2(Who,ets:next(junction,Key))
-                                   end;
-                                 true -> false
-                               end;
-           up ->  D = abs(Y-Y2), if
-                              D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                              D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road], 
-                                case L2 of
-                                  [] -> false;
-                                  _ -> checkBypass2(Who,ets:next(junction,Key))
-                                end;
-                              true ->false
-                            end;
-           down -> D = abs(Y2-Y), if
-                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
-                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
-                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                 case L2 of
-                                   [] -> false;
-                                   _ -> checkBypass2(Who,ets:next(junction,Key))
+           right ->  D = X2-X, if
+                                      D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                                      D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                        L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                        L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                        case L2 of
+                                          [] -> false;
+                                          _ -> checkBypass2(Who,ets:next(junction,Key))
+                                        end;
+                                      D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                                      true -> false
+                                    end;
+           up ->  D = Y-Y2, if
+                                   D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                                   D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                     L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                     L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                     case L2 of
+                                       [] -> false;
+                                       _ -> checkBypass2(Who,ets:next(junction,Key))
+                                     end;
+                                   D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                                   true ->false
                                  end;
-                               true ->false
-                             end
+           down -> D = Y2-Y, if
+                                    D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
+                                    D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                                      L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                      L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                      case L2 of
+                                        [] -> false;
+                                        _ -> checkBypass2(Who,ets:next(junction,Key))
+                                      end;
+                                    D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
+                                    true ->false
+                                  end
          end
   end.
 
