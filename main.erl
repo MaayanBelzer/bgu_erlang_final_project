@@ -18,7 +18,7 @@
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2]).
 -define(max_x, 1344).
 -define(max_y,890).
--define(Timer,2).
+-define(Timer,34).
 -define(PC1, a@ubuntu).
 -define(PC2, b@ubuntu).
 -define(PC3,c@ubuntu).
@@ -34,8 +34,8 @@ start() ->
 
 init([]) ->
   ets:new(cars,[set,public,named_table]),
-%  net_kernel:monitor_nodes(true),
-%  timer:sleep(200),
+  net_kernel:monitor_nodes(true),
+  timer:sleep(200),
   net_kernel:connect_node(?PC1),
   timer:sleep(200),
   net_kernel:connect_node(?PC2),
@@ -114,7 +114,7 @@ handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) ->         
 handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
   io:format("~p~n", [{X,Y}]),
   search_close_car(ets:first(cars),{X,Y}),
-  search_close_junction(ets:first(junction),{X,Y}),
+%  search_close_junction(ets:first(junction),{X,Y}),
   {noreply,State}.
 
 handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
@@ -254,7 +254,7 @@ handle_sync_event(_Event,_,State) ->
 
 printCars('$end_of_table',_,_,_,_) -> ok;
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
-  [{_,[{A,B},D,_,Type,Turn]}] = ets:lookup(cars,Key),
+  [{_,[{A,B},D,_,Type,Turn],Name,Start}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Turn of
     st-> case Type of
@@ -322,8 +322,16 @@ handle_info(timer, State=#state{frame = Frame}) ->                    % refresh 
 %io:format("fdsnjkdsnskj"),
   wxWindow:refresh(Frame),
   erlang:send_after(?Timer,self(),timer),
-  {noreply, State}.
+  {noreply, State};
 
+handle_info({nodeup,PC},State)->
+  io:format("~p nodeup ~n",[PC]),
+  {noreply, State};
+
+handle_info({nodedown,PC},State)->
+  io:format("~p nodedown ~n",[PC]),
+
+  {noreply, State}.
 
 handle_cast({delete_car, Pid},State) ->
   ets:delete(cars,Pid),
@@ -400,7 +408,7 @@ createBitMaps() ->         % create bitmap to all images
 
 search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
 search_close_car(Key,{X,Y}) ->
-  [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key),
+  [{_,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,Key),
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
 

@@ -537,8 +537,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 checkBypass(_,_,'$end_of_table') -> true;
-checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_]}] =  ets:lookup(cars,Who),
-  [{P2,[{X2,Y2},_,R2,_,_]}] = ets:lookup(cars,FirstKey),
+checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_],_,_}] =  ets:lookup(cars,Who),
+  [{P2,[{X2,Y2},_,R2,_,_],_,_}] = ets:lookup(cars,FirstKey),
   if
     R == R2, P2 /= Who, P2 /= OtherCar ->
       case Dir1 of
@@ -566,7 +566,7 @@ checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_]}] =  ets:lookup(car
 
 checkBypass2(_,'$end_of_table') -> true;
 checkBypass2(Who,Key) ->
-  [{_,[{X,Y},Dir1,R,_,_]}] =  ets:lookup(cars,Who),
+  [{_,[{X,Y},Dir1,R,_,_],_,_}] =  ets:lookup(cars,Who),
   [{{R2,J},[{X2,Y2},_]}] = ets:lookup(junction,Key),
 %  [{{R2,J},[{X2,Y2},_,{_,_}]}] = ets:lookup(junction,Key),
   case R == R2 of

@@ -17,18 +17,18 @@
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
 close_to_car(Pid,FirstKey) ->
 
-  [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Pid),
+  [{_,[{X,Y},Dir1,_,_,_],_,_}] = ets:lookup(cars,Pid),
   Bool = ets:member(cars,FirstKey),
   if
     Bool == true->
       Bool2 = ets:member(cars,FirstKey),
       if
-        Bool2 == true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey);
-        true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+        Bool2 == true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_}] = ets:lookup(cars,FirstKey);
+        true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_}] = ets:lookup(cars,ets:first(cars))
       end;
 
 
-    true -> [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+    true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_}] = ets:lookup(cars,ets:first(cars))
   end,
 %  [{P2,[{X2,Y2},Dir2,_,_,_]}] = ets:lookup(cars,FirstKey),
   case Dir1 == Dir2 of
@@ -118,7 +118,7 @@ close_to_junction(Pid,FirstKey) ->
 
 
 
-  [{_,[{X,Y},Dir1,R1,_,_]}] = ets:lookup(cars,Pid),
+  [{_,[{X,Y},Dir1,R1,_,_],_,_}] = ets:lookup(cars,Pid),
 
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey),
 
@@ -176,10 +176,10 @@ close_to_junction(Pid,FirstKey) ->
 
 
 far_from_car(Who,Other_car) ->
-  [{_,[{X,Y},Dir1,_,_,_]}] = ets:lookup(cars,Who),
+  [{_,[{X,Y},Dir1,_,_,_],_,_}] = ets:lookup(cars,Who),
   Bool = ets:member(cars,Other_car),
   if
-    Bool == true -> [{_,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Other_car),
+    Bool == true -> [{_,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,Other_car),
       case Dir1 of
         left -> D = X-X2, if
                             D >= 100  -> cars:far_from_car(Who);
@@ -208,7 +208,7 @@ far_from_car(Who,Other_car) ->
 
 
 outOfRange(Pid)->
-  [{_,[{X,Y},Dir,R,Type,Turn]}] = ets:lookup(cars,Pid),
+  [{_,[{X,Y},Dir,R,Type,Turn],Name,Start}] = ets:lookup(cars,Pid),
   %Dx = X - 692,
   Dx = X - 721,
   Dy = Y - 472,
@@ -271,16 +271,16 @@ sync_traffic([H|T]) ->
 
 car_accident(Pid,'$end_of_table') -> car_accident(Pid,ets:first(cars));
 car_accident(Pid,Key) ->
-  [{_,[{X,Y},_,_,_,_]}] = ets:lookup(cars,Pid),
+  [{_,[{X,Y},_,_,_,_],_,_}] = ets:lookup(cars,Pid),
   Bool = ets:member(cars,Key),
   if
     Bool == true->
       Bool2 = ets:member(cars,Key),
       if
-        Bool2 == true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,Key);
-        true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+        Bool2 == true -> [{P2,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,Key);
+        true -> [{P2,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,ets:first(cars))
       end;
-    true -> [{P2,[{X2,Y2},_,_,_,_]}] = ets:lookup(cars,ets:first(cars))
+    true -> [{P2,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,ets:first(cars))
   end,
 
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
