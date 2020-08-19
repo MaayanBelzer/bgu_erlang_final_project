@@ -23,7 +23,8 @@
   code_change/3]).
 
 % gen_server events
--export([s_accident/3,s_close_to_car/3,s_fallen_car/2,s_into_range/2,s_light/3,s_out_of_range/2,start/0,car_finish_bypass/2,car_finish_turn/2,deleteCar/1,deletePid/1]).
+-export([s_accident/3,s_close_to_car/3,s_fallen_car/2,s_into_range/2,s_light/3,s_out_of_range/2,start/0,start/4,
+  car_finish_bypass/2,car_finish_turn/2,deleteCar/1,deletePid/1,update_car_location/0,start_car/3,moved_car/5]).
 
 -define(SERVER, ?MODULE).
 
@@ -45,6 +46,8 @@ start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 start() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(PC1,PC2,PC3,PC4) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [PC1,PC2,PC3,PC4], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -64,6 +67,147 @@ start() ->
 -spec(init(Args :: term()) ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
+
+init([PC1,PC2,PC3,PC4]) ->
+  put(pc1,PC1), put(pc2,PC2), put(pc3,PC3), put(pc4,PC4),
+ets:new(cars,[set,public,named_table]),%
+
+  net_kernel:connect_node(PC1),
+  net_kernel:connect_node(PC2),
+  net_kernel:connect_node(PC3),
+  net_kernel:connect_node(PC4),
+
+
+%Pid = spawn(cars,start,[1]),
+%io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
+%ets:insert(cars,{Pid,[{1200,120},left,r1]}),
+%ets:insert(cars,{1,[{160, 120},left,r1]}),
+
+%c(main).
+%c(server).
+%c(cars).
+%c(sensors).
+%c(traffic_light).
+%main:start().
+
+ets:new(junction,[set,public,named_table]),
+
+
+traffic_light:start(r1a,{{r1,a},[{1137,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1a,{{r1,a},[{1137,120},{1130, 35}]}),
+traffic_light:start(r1b,{{r1,b},[{938,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1b,{{r1,b},[{938,120},{847, 35}]}),
+ets:insert(junction,{{r1,t},[{799,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r1,t},[{799,120},nal,{nal,nal}]}),
+traffic_light:start(r1c,{{r1,c},[{638,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r1c,{{r1,c},[{638,120},{634, 35}]}),
+ets:insert(junction,{{r1,s},[{420,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r1,s},[{420,120},nal,{nal,nal}]}),
+traffic_light:start(r1d,{{r1,d},[{302,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r1d,{{r1,d},[{302,120},{280, 35}]}),
+traffic_light:start(r1e,{{r1,e},[{164,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r1e,{{r1,e},[{164,120},{138, 35}]}),
+traffic_light:start(r2e,{{r2,e},[{128,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r2e,{{r2,e},[{128,75},{75, 35}]}),
+traffic_light:start(r2f,{{r2,f},[{128,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r2f,{{r2,f},[{128,355},{75, 330}]}),
+traffic_light:start(r2o,{{r2,o},[{128,590}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r2o,{{r2,o},[{128,590},{75, 575}]}),
+traffic_light:start(r3f,{{r3,f},[{81,418}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r3f,{{r3,f},[{81,418},{75, 426}]}),
+ets:insert(junction,{{r3,r},[{204,418},nal]}),%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r3,r},[{204,418},nal,{nal,nal}]}),
+traffic_light:start(r3g,{{r3,g},[{372,418}]}),%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3g,{{r3,g},[{372,418},{355, 426}]}),
+traffic_light:start(r3h,{{r3,h},[{560,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3h,{{r3,h},[{560,418},{571, 426}]}),
+traffic_light:start(r3i,{{r3,i},[{728,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r3i,{{r3,i},[{728,418},{713, 420}]}),
+ets:insert(junction,{{r3,u},[{860,418},nal]}),%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r3,u},[{860,418},nal,{nal,nal}]}),
+traffic_light:start(r3j,{{r3,j},[{1055,418}]}),%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r3j,{{r3,j},[{1055,418},{1067, 426}]}),
+traffic_light:start(r4l,{{r4,l},[{625,820}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4l,{{r4,l},[{625,820},{634, 790}]}),
+traffic_light:start(r4m,{{r4,m},[{625,689}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4m,{{r4,m},[{625,689},{418, 660}]}),
+traffic_light:start(r4h,{{r4,h},[{590,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4h,{{r4,h},[{590,433},{634, 426}]}),
+traffic_light:start(r4c,{{r4,c},[{625,154}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r4c,{{r4,c},[{625,154},{634, 135}]}),
+traffic_light:start(r5k,{{r5,k},[{1058,640}]}),%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r5k,{{r5,k},[{1058,640},{1067, 660}]}),
+traffic_light:start(r6k,{{r6,k},[{1122,671}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6k,{{r6,k},[{1122,671},{1130, 660}]}),
+traffic_light:start(r6j,{{r6,j},[{1122,434}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6j,{{r6,j},[{1122,434},{1130, 426}]}),
+traffic_light:start(r6a,{{r6,a},[{1122,154}]}),%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r6a,{{r6,a},[{1122,154},{1130, 135}]}),
+traffic_light:start(r7l,{{r7,l},[{640,787}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r7l,{{r7,l},[{640,787},{634, 710}]}),
+traffic_light:start(r8d,{{r8,d},[{266,154}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r8d,{{r8,d},[{266,154},{280, 135}]}),
+traffic_light:start(r9o,{{r9,o},[{80,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% traffic_light:start(r9o,{{r9,o},[{80,655},{75, 660}]}),
+traffic_light:start(r9n,{{r9,n},[{342,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%  traffic_light:start(r9n,{{r9,n},[{342,655},{571, 660}]}),
+traffic_light:start(r9m,{{r9,m},[{560,655}]}),%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r9m,{{r9,m},[{560,655},{355, 660}]}),
+traffic_light:start(r10i,{{r10,i},[{763,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r10i,{{r10,i},[{763,355},{713, 330}]}),
+ets:insert(junction,{{r12,p},[{902,590},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r12,p},[{902,590},nal,{nal,nal}]}),
+ets:insert(junction,{{r12,q},[{902,745},nal]}),%%%%%%%%%%%%%%%%%%%%%
+%  ets:insert(junction,{{r12,q},[{902,745},nal,{nal,nal}]}),
+traffic_light:start(r14n,{{r14,n},[{407,670}]}),%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
+traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
+
+traffic_light:start(r18b,{{r18,b},[{902,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
+
+FirstKey = ets:first(junction),
+KeyList = keys(junction, FirstKey, [FirstKey]),
+spawn(sensors,traffic_light_sensor,[KeyList,ets:first(junction)]),
+
+ets:new(comms,[set,public,named_table]),
+communication_tower:start(com1_1,{1121,111}),
+communication_tower:start(com1_2,{850,105}),
+communication_tower:start(com1_3,{838,377}),
+communication_tower:start(com1_4,{1124,341}),
+communication_tower:start(com2_1,{550,123}),
+communication_tower:start(com2_2,{219,120}),
+communication_tower:start(com2_3,{197,374}),
+communication_tower:start(com2_4,{480,395}),
+communication_tower:start(com3_1,{589,557}),
+communication_tower:start(com3_2,{392,623}),
+communication_tower:start(com3_3,{157,632}),
+communication_tower:start(com3_4,{561,784}),
+communication_tower:start(com4_1,{1025,519}),
+communication_tower:start(com4_2,{868,717}),
+communication_tower:start(com4_3,{1121,707}),
+
+CarMonitor = spawn(sensors,car_monitor,[PC1,PC2,PC3,PC4]),
+put(car_monitor,CarMonitor),
+ets:new(sensors,[set,public,named_table]),
+
+
+
+
+roadGraph(),
+{ok, #state{}};
+
+
+
+
+
+
+
+
+
+
 init([]) ->
   ets:new(cars,[set,public,named_table]),%
 
@@ -217,6 +361,9 @@ car_finish_turn(Comm,Who) ->
 
 deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}).
 deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}).
+update_car_location() ->gen_server:call(?MODULE,update_car).
+start_car(Name,Type,Start)-> gen_server:cast(?MODULE,{start_car,Name,Type,Start}).
+moved_car(Name,Type,Start,Location,Con) -> gen_server:cast(?MODULE,{movedCar,Name,Type,Start,Location,Con}).
 
 
 
@@ -235,6 +382,11 @@ deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}).
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+
+handle_call(update_car, _, State) ->
+Car = ets:tab2list(cars),
+  {reply, {ok,Car}, State};
+
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -252,10 +404,11 @@ handle_call(_Request, _From, State) ->
 %handle_cast(_Request, State) ->
 %  {noreply, State}.
 handle_cast({del,Pid},State) ->
-  % timer:sleep(2000),
+   timer:sleep(100),
   io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   io:format("BBBBBBBBBB~n") ,
-
+  timer:sleep(20),
+  rpc:call(home@ubuntu,main,delete_car,[Pid]),
   ets:delete(cars,Pid),
 
   {noreply, State};
@@ -265,9 +418,13 @@ handle_cast({delP,Pid},State) ->
   io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   io:format("VVVVVVVVVVVVVVVVVVVVVVVVVVV~n") ,
 
-
-
   {noreply, State};
+
+handle_cast({movedCar,Name,Type,Start,Location,Con},State) ->
+ cars:start(Name,get(car_monitor),Type,Start,Location,Con),
+  {noreply, State};
+
+
 
 handle_cast({light,Comm,Who,{_,J}}, State) -> % TODO: decide whether the car turns left, right or straight
 
@@ -309,6 +466,14 @@ handle_cast({ctc,Comm,Who,OtherCar}, State) -> % TODO: decide whether the car sl
   end,
 
   {noreply, State};
+
+handle_cast({start_car,Name,Type,Start},State) ->
+cars:start(Name,get(car_monitor),Type,Start),
+  {noreply, State};
+
+
+
+
 handle_cast({fallen,Who}, State) -> % TODO: if car process has fallen with an error, bring it back up if possible
   {noreply, State};
 handle_cast({acc,Who,Car2}, State) -> % TODO: remove involved cars from street

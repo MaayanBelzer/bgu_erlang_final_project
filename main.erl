@@ -15,19 +15,37 @@
 %-export([start/0, init/1, terminate/2, code_change/3,
 %  handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3, close/0, pass_soldier/2]).
 %-include("header.hrl").
--export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2]).
+-export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2]).
 -define(max_x, 1344).
 -define(max_y,890).
--define(Timer,20).
+-define(Timer,2).
+-define(PC1, a@ubuntu).
+-define(PC2, b@ubuntu).
+-define(PC3,c@ubuntu).
+-define(PC4, d@ubuntu).
 
 -define(SERVER, ?MODULE).
 %-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,key}).
 -record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
 %%%-------------------------------------------------------------------
+
 start() ->
   wx_object:start({local,?SERVER},?MODULE,[],[]).
 
 init([]) ->
+  ets:new(cars,[set,public,named_table]),
+%  net_kernel:monitor_nodes(true),
+%  timer:sleep(200),
+  net_kernel:connect_node(?PC1),
+  timer:sleep(200),
+  net_kernel:connect_node(?PC2),
+  timer:sleep(200),
+  net_kernel:connect_node(?PC3),
+  timer:sleep(200),
+  net_kernel:connect_node(?PC4),
+  timer:sleep(200),
+
+
   % graphics
   WxServer = wx:new(),
   Frame = wxFrame:new(WxServer, ?wxID_ANY, "MAP", [{size,{?max_x, ?max_y}}]),
@@ -56,7 +74,25 @@ init([]) ->
 
 %  erlang:send_after(?money_timer, self(), money),
 
-  {ok,Pi} = server:start(),
+%  {ok,PID} = server:start(),
+  {ok,Pid1}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4]),
+  {ok,Pid2}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4]),
+  {ok,Pid3}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4]),
+  {ok,Pid4}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4]),
+
+  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,red,st]]),
+  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,red,st]]),
+  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,red,st]]),
+  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st]]),
+  rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st]]),
+  rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st]]),
+  rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st]]),
+  rpc:call(?PC1,server,start_car,[h,20,[{1117,890},up,r6,red,st]]),
+
+
+
+
+
 
 
 %  {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
@@ -275,17 +311,23 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
 handle_info(timer, State=#state{frame = Frame}) ->                    % refresh screen for graphics
 
 %  checkUpdateCall(?PC1),
+  update_ets(?PC1),
+  update_ets(?PC2),
+  update_ets(?PC3),
+  update_ets(?PC4),
+
 %  checkUpdateCall(?PC2),
 %  checkUpdateCall(?PC3),
 %  checkUpdateCall(?PC4),
 %io:format("fdsnjkdsnskj"),
   wxWindow:refresh(Frame),
-  erlang:send_after(20,self(),timer),
+  erlang:send_after(?Timer,self(),timer),
   {noreply, State}.
 
 
-
-
+handle_cast({delete_car, Pid},State) ->
+  ets:delete(cars,Pid),
+  {noreply,State}.
 
 
 
@@ -377,6 +419,28 @@ search_close_junction(Key,{X,Y}) ->
   end.
 
 
+update_ets(PC) ->
+  List=
+    try
+      rpc:call(PC,server,update_car_location,[])
+    catch _:_ -> problem
+    end,
+  case List of
+    problem -> ok;
+    {ok, List1} -> %lists:foreach(fun(Key_Value) -> ets:insert(cars, Key_Value) end, List);
+
+      list_to_ets(List1);
+     Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
+       ok
+  end.
+
+list_to_ets('$end_of_table') ->                                                                                           % add ETS to my ets
+  ok;
+list_to_ets(List) ->
+  lists:foreach(fun(Key_Value) -> ets:insert(cars, Key_Value) end, List).
+
+
+delete_car(Pid) -> wx_object:cast(main,{delete_car, Pid}).
 
 
 
