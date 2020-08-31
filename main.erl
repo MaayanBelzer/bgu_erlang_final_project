@@ -14,15 +14,12 @@
 -include_lib("wx/include/wx.hrl").
 %-export([start/0, init/1, terminate/2, code_change/3,
 %  handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3, close/0, pass_soldier/2]).
-%-include("header.hrl").
+-include("header.hrl").
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2]).
 -define(max_x, 1344).
 -define(max_y,890).
 -define(Timer,34).
--define(PC1, a@ubuntu).
--define(PC2, b@ubuntu).
--define(PC3,c@ubuntu).
--define(PC4, d@ubuntu).
+
 
 -define(SERVER, ?MODULE).
 %-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,key}).
@@ -80,10 +77,10 @@ init([]) ->
 %  erlang:send_after(?money_timer, self(), money),
 
 %  {ok,PID} = server:start(),
-  {ok,_}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
-  {ok,_}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
-  {ok,_}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
-  {ok,_}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
+  {ok,_}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  {ok,_}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  {ok,_}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  {ok,_}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
 
   rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,red,st],?PC1]),
   rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,red,st],?PC1]),
