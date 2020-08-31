@@ -91,7 +91,7 @@ handle_cast({Comm,Car,MSG},State)->
     {s_into_range} -> server:s_into_range(Comm,Car);
     {car_finish_bypass} -> server:car_finish_bypass(Comm,Car);
     {car_finish_turn} -> server:car_finish_turn(Comm,Car);
-    {deleteCar} -> server:deleteCar(Comm,Car);
+    {deleteCar} -> server:deleteCar(Car);
 
 
     {f_bypass}->cars:f_bypass(Car);

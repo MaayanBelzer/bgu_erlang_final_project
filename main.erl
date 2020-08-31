@@ -46,6 +46,11 @@ init([]) ->
   timer:sleep(200),
 
 
+  put(?PC1,?PC1),
+  put(?PC2,?PC2),
+  put(?PC3,?PC3),
+  put(?PC4,?PC4),
+
   % graphics
   WxServer = wx:new(),
   Frame = wxFrame:new(WxServer, ?wxID_ANY, "MAP", [{size,{?max_x, ?max_y}}]),
@@ -75,19 +80,19 @@ init([]) ->
 %  erlang:send_after(?money_timer, self(), money),
 
 %  {ok,PID} = server:start(),
-  {ok,Pid1}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4]),
-  {ok,Pid2}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4]),
-  {ok,Pid3}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4]),
-  {ok,Pid4}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4]),
+  {ok,_}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
+  {ok,_}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
+  {ok,_}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
+  {ok,_}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,home@ubuntu]),
 
-  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,red,st]]),
-  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,red,st]]),
-  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,red,st]]),
-  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st]]),
-  rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st]]),
-  rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st]]),
-  rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st]]),
-  rpc:call(?PC1,server,start_car,[h,20,[{1117,890},up,r6,red,st]]),
+  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,red,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,red,st],?PC1]),
+  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,red,st],?PC2]),
+  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st],?PC2]),
+  rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st],?PC3]),
+  rpc:call(?PC1,server,start_car,[h,20,[{1117,890},up,r6,red,st],?PC1]),
 
 
 
@@ -117,9 +122,14 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
 %  search_close_junction(ets:first(junction),{X,Y}),
   {noreply,State}.
 
-handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
+handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
+ % frame = Frame,
+  panel = Panel,
+  %dc=DC, paint = Paint,
   bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-  bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed, bmpCommTower = BmpCommTower}) ->
+  bmpTruck = BmpTruck,bmpTrafficLight = BmpTrafficLight,
+ % bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,
+  bmpCommTower = BmpCommTower}) ->
 
 %handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
 %  bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
@@ -254,7 +264,7 @@ handle_sync_event(_Event,_,State) ->
 
 printCars('$end_of_table',_,_,_,_) -> ok;
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
-  [{_,[{A,B},D,_,Type,Turn],Name,Start}] = ets:lookup(cars,Key),
+  [{_,[{A,B},D,_,Type,Turn],_,_,_,_,_}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Turn of
     st-> case Type of
@@ -310,11 +320,13 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
 
 handle_info(timer, State=#state{frame = Frame}) ->                    % refresh screen for graphics
 
+
+
 %  checkUpdateCall(?PC1),
-  update_ets(?PC1),
-  update_ets(?PC2),
-  update_ets(?PC3),
-  update_ets(?PC4),
+  update_ets(get(?PC1)),
+  update_ets(get(?PC2)),
+  update_ets(get(?PC3)),
+  update_ets(get(?PC4)),
 
 %  checkUpdateCall(?PC2),
 %  checkUpdateCall(?PC3),
@@ -330,6 +342,39 @@ handle_info({nodeup,PC},State)->
 
 handle_info({nodedown,PC},State)->
   io:format("~p nodedown ~n",[PC]),
+  case PC of
+    ?PC1 -> backup_pc(?PC1,get(?PC2)),
+      rpc:call(get(?PC2),server,update_monitor,[pc_1]),
+      rpc:call(get(?PC3),server,update_monitor,[pc_1]),
+      rpc:call(get(?PC4),server,update_monitor,[pc_1]),
+      move_car(?PC1,ets:first(cars))     ;
+
+      %TODO send to all computer to update the monitor
+      %TODO moved all cars in pc1 to pc2
+
+    ?PC2 ->backup_pc(?PC2,get(?PC3)),
+      rpc:call(get(?PC1),server,update_monitor,[pc_2]),
+      rpc:call(get(?PC3),server,update_monitor,[pc_2]),
+      rpc:call(get(?PC4),server,update_monitor,[pc_2]),
+      move_car(?PC2,ets:first(cars));
+
+
+
+    ?PC3 ->backup_pc(?PC3,get(?PC4)),
+      rpc:call(get(?PC2),server,update_monitor,[pc_3]),
+      rpc:call(get(?PC1),server,update_monitor,[pc_3]),
+      rpc:call(get(?PC4),server,update_monitor,[pc_3]),
+      move_car(?PC3,ets:first(cars));
+
+
+
+    ?PC4 ->backup_pc(?PC4,get(?PC1)),
+      rpc:call(get(?PC2),server,update_monitor,[pc_4]),
+      rpc:call(get(?PC3),server,update_monitor,[pc_4]),
+      rpc:call(get(?PC1),server,update_monitor,[pc_4]),
+      move_car(?PC4,ets:first(cars))
+
+  end,
 
   {noreply, State}.
 
@@ -408,7 +453,7 @@ createBitMaps() ->         % create bitmap to all images
 
 search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
 search_close_car(Key,{X,Y}) ->
-  [{_,[{X2,Y2},_,_,_,_],_,_}] = ets:lookup(cars,Key),
+  [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key),
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
 
@@ -417,14 +462,14 @@ search_close_car(Key,{X,Y}) ->
     true-> search_close_car(ets:next(cars,Key),{X,Y})
   end.
 
-search_close_junction('$end_of_table',_) ->io:format("there is no close junction ~n") ,ok;
-search_close_junction(Key,{X,Y}) ->
-  [{{R,J},[{X2,Y2},_]}] =  ets:lookup(junction,Key),
-  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
-  if
-    D =< 70 -> io:format("~p~n",[{R,J}]), ok;
-    true-> search_close_junction(ets:next(junction,Key),{X,Y})
-  end.
+%search_close_junction('$end_of_table',_) ->io:format("there is no close junction ~n") ,ok;
+%search_close_junction(Key,{X,Y}) ->
+%  [{{R,J},[{X2,Y2},_]}] =  ets:lookup(junction,Key),
+%  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+%  if
+%    D =< 70 -> io:format("~p~n",[{R,J}]), ok;
+%    true-> search_close_junction(ets:next(junction,Key),{X,Y})
+%  end.
 
 
 update_ets(PC) ->
@@ -438,8 +483,8 @@ update_ets(PC) ->
     {ok, List1} -> %lists:foreach(fun(Key_Value) -> ets:insert(cars, Key_Value) end, List);
 
       list_to_ets(List1);
-     Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
-       ok
+    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
+      ok
   end.
 
 list_to_ets('$end_of_table') ->                                                                                           % add ETS to my ets
@@ -451,5 +496,53 @@ list_to_ets(List) ->
 delete_car(Pid) -> wx_object:cast(main,{delete_car, Pid}).
 
 
+move_car(_,'$end_of_table') -> ok;
+move_car(PcDown,Key) -> %[{_,[{X,Y},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key),
+  [{_,Location,Name,Start,Type,Con,PC}] = ets:lookup(cars,Key),
 
+
+
+  case PcDown of
+    ?PC1 -> if
+              PC == ?PC1  -> rpc:call(?PC2,server,moved_car,[Name,Type,Start,Location,Con,?PC2]),
+                Next = ets:next(cars,Key),
+                ets:delete(cars,Key),
+                move_car(PcDown,Next) ; %TODO START CAR IN PC2 AND DELETE THE OLD PID FROM THE ETS
+              true ->move_car(PcDown,ets:next(cars,Key))
+            end;
+
+    ?PC2 -> if
+
+              PC == ?PC2 -> rpc:call(?PC3,server,moved_car,[Name,Type,Start,Location,Con,?PC3]),
+                Next = ets:next(cars,Key),
+                ets:delete(cars,Key),
+                move_car(PcDown,Next); %TODO START CAR IN PC3 AND DELETE THE OLD PID FROM THE ETS
+              true -> move_car(PcDown,ets:next(cars,Key))
+            end;
+
+    ?PC3 -> if
+
+              PC == ?PC3 -> rpc:call(?PC4,server,moved_car,[Name,Type,Start,Location,Con,?PC4]),
+                Next = ets:next(cars,Key),
+                ets:delete(cars,Key),
+                move_car(PcDown,Next) ; %TODO START CAR IN PC4 AND DELETE THE OLD PID FROM THE ETS
+              true -> move_car(PcDown,ets:next(cars,Key))
+            end;
+
+    ?PC4 -> if
+
+              PC == ?PC4 -> rpc:call(?PC1,server,moved_car,[Name,Type,Start,Location,Con,?PC1]),
+                Next = ets:next(cars,Key),
+                ets:delete(cars,Key),
+                move_car(PcDown,Next) ; %TODO START CAR IN PC1 AND DELETE THE OLD PID FROM THE ETS
+              true -> move_car(PcDown,ets:next(cars,Key))
+            end
+  end.
+
+backup_pc(PCDown,NewPC) ->
+  L = [?PC1,?PC2,?PC3,?PC4],
+  L2 = [PC||PC <-L, get(PC) == PCDown], io:format("~p~n",[L2]),
+  Fun = fun(E) -> put(E,NewPC) end,
+  lists:foreach(Fun,L2),
+  io:format("JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ~n~p~n",[get()]),ok.
 
