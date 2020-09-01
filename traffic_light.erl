@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author maayan
+%%% @author Maayan Belzer, Nir Tapiero
 %%% @copyright (C) 2020, <COMPANY>
 %%% @doc
 %%%
@@ -7,7 +7,7 @@
 %%% Created : 30. יוני 2020 17:58
 %%%-------------------------------------------------------------------
 -module(traffic_light).
--author("maayan").
+-author("Maayan Belzer, Nir Tapiero").
 
 -behaviour(gen_statem).
 
@@ -50,9 +50,9 @@ start(Name,{{R,J},[{X,Y}]}) ->
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
-init([]) ->
+%init([]) ->
 
-  {ok, red, #traffic_light_state{},2000};
+%  {ok, red, #traffic_light_state{},2000}; % TODO delete
 
 
 init({{R,J},[{X,Y}]}) ->
@@ -70,8 +70,8 @@ callback_mode() ->
   state_functions.
 
 %%Events
-timeout() -> gen_statem:cast(?MODULE,{time}).
-sensor_msg(Pid,Color) -> gen_statem:cast(Pid,{msg,Color}).
+timeout() -> gen_statem:cast(?MODULE,{time}). % timeout event
+sensor_msg(Pid,Color) -> gen_statem:cast(Pid,{msg,Color}). % receive message
 
 
 %% @private
@@ -91,25 +91,25 @@ state_name(_EventType, _EventContent, State = #traffic_light_state{}) ->
   NextStateName = next_state,
   {next_state, NextStateName, State}.
 
-red(timeout,3000,State = #traffic_light_state{}) ->
+red(timeout,3000,State = #traffic_light_state{}) -> % after 3 seconds, turn green
   NextStateName = green,
   {next_state, NextStateName, State,3000};
-red(timeout,2000,State = #traffic_light_state{}) ->
+red(timeout,2000,State = #traffic_light_state{}) -> % after 2 seconds turn green
   NextStateName = green,
   {next_state, NextStateName, State,3000};
-red(cast,{msg,_},State = #traffic_light_state{}) ->
+red(cast,{msg,_},State = #traffic_light_state{}) -> % stay red for 3 seconds if message was received
   NextStateName = red,
   {next_state, NextStateName, State,3000}.
-yellow(timeout,1000,State = #traffic_light_state{}) ->
+yellow(timeout,1000,State = #traffic_light_state{}) -> % after 1 second, turn red for 2 seconds
   NextStateName = red,
   {next_state, NextStateName, State,2000};
-yellow(cast,{msg,_},State = #traffic_light_state{}) ->
+yellow(cast,{msg,_},State = #traffic_light_state{}) -> % stay yellow for 1 second if message was received
   NextStateName = yellow,
   {next_state, NextStateName, State,1000}.
-green(timeout,3000,State = #traffic_light_state{}) ->
+green(timeout,3000,State = #traffic_light_state{}) -> % after 3 seconds turn yellow for 1 second
   NextStateName = yellow,
   {next_state, NextStateName, State,1000};
-green(cast,{msg,Color},State = #traffic_light_state{}) ->
+green(cast,{msg,Color},State = #traffic_light_state{}) -> % if message received is red go to yellow for 1 second, if it's green stay green for 3 seconds
   case Color of
     red ->   NextStateName = yellow,
       {next_state, NextStateName, State,1000};

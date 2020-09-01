@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author MN
+%%% @author Maayan Belzer, Nir Tapiero
 %%% @copyright (C) 2020, <COMPANY>
 %%% @doc
 %%%
@@ -7,7 +7,7 @@
 %%% Created : 05. Jul 2020 3:53 AM
 %%%-------------------------------------------------------------------
 -module(server).
--author("MN").
+-author("Maayan Belzer, Nir Tapiero").
 
 -behaviour(gen_server).
 
@@ -23,7 +23,7 @@
   code_change/3]).
 
 % gen_server events
--export([s_accident/3,s_close_to_car/3,s_fallen_car/2,s_into_range/2,s_light/3,s_out_of_range/2,start/0,start/5,
+-export([s_accident/3,s_close_to_car/3,s_light/3,start/0,start/5,
   car_finish_bypass/2,car_finish_turn/2,deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/6,update_monitor/1]).
 
 -define(SERVER, ?MODULE).
@@ -69,29 +69,15 @@ start(PC1,PC2,PC3,PC4,Home) ->
   {stop, Reason :: term()} | ignore).
 
 init([PC1,PC2,PC3,PC4,Home]) ->
-  put(pc1,PC1), put(pc2,PC2), put(pc3,PC3), put(pc4,PC4), put(home,Home),
-  ets:new(cars,[set,public,named_table]),%
+  put(pc1,PC1), put(pc2,PC2), put(pc3,PC3), put(pc4,PC4), put(home,Home), % put PCs address in process dictionary
+  ets:new(cars,[set,public,named_table]), % initialize new ets for cars
 
-  net_kernel:connect_node(PC1),
+  net_kernel:connect_node(PC1), % connect PCs
   net_kernel:connect_node(PC2),
   net_kernel:connect_node(PC3),
   net_kernel:connect_node(PC4),
 
-
-%Pid = spawn(cars,start,[1]),
-%io:format("AAAAAAAAAAAAAAAAAAAAAAAAAA  ~p~n",[Pid]),
-%ets:insert(cars,{Pid,[{1200,120},left,r1]}),
-%ets:insert(cars,{1,[{160, 120},left,r1]}),
-
-%c(main).
-%c(server).
-%c(cars).
-%c(sensors).
-%c(traffic_light).
-%main:start().
-
-  ets:new(junction,[set,public,named_table]),
-
+  ets:new(junction,[set,public,named_table]), % initialize ets for junctions and add all traffic lights
 
   traffic_light:start(r1a,{{r1,a},[{1137,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%5
 %  traffic_light:start(r1a,{{r1,a},[{1137,120},{1130, 35}]}),
@@ -170,9 +156,9 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 
   FirstKey = ets:first(junction),
   KeyList = keys(junction, FirstKey, [FirstKey]),
-  spawn(sensors,traffic_light_sensor,[KeyList,ets:first(junction)]),
+  spawn(sensors,traffic_light_sensor,[KeyList,ets:first(junction)]), % spawn traffic light sensor
 
-  ets:new(comms,[set,public,named_table]),
+  ets:new(comms,[set,public,named_table]), % initialize ets for communication towers and insert all of them
   communication_tower:start(com1_1,{1121,111}),
   communication_tower:start(com1_2,{850,105}),
   communication_tower:start(com1_3,{838,377}),
@@ -189,14 +175,11 @@ init([PC1,PC2,PC3,PC4,Home]) ->
   communication_tower:start(com4_2,{868,717}),
   communication_tower:start(com4_3,{1121,707}),
 
-  CarMonitor = spawn(sensors,car_monitor,[PC1,PC2,PC3,PC4]),
+  CarMonitor = spawn(sensors,car_monitor,[PC1,PC2,PC3,PC4]), % spawn car monitor
   put(car_monitor,CarMonitor),
-  ets:new(sensors,[set,public,named_table]),
 
-
-
-
-  roadGraph(),
+  ets:new(sensors,[set,public,named_table]), % initialize sensors ets
+  roadGraph(), % make graph for roads
   {ok, #state{}}.
 
 
@@ -339,32 +322,24 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 %  {ok, #state{}}.
 
 %% Events
-s_light(Comm,Who,{R,J}) -> gen_server:cast(?MODULE,{light,Comm,Who,{R,J}}).
-s_close_to_car(Comm,Who,OtherCar) -> gen_server:cast(?MODULE,{ctc,Comm,Who,OtherCar}).
-s_fallen_car(Comm,Who) -> gen_server:cast(?MODULE,{fallen,Comm,Who}).
-s_accident(Comm,Who,Car2) -> gen_server:cast(?MODULE,{acc,Comm,Who,Car2}).
-s_out_of_range(Comm,Who) -> gen_server:cast(?MODULE,{oor,Comm,Who}).
-s_into_range(Comm,Who) -> gen_server:cast(?MODULE,{inr,Comm,Who}).
-car_finish_bypass(Comm,Who) -> case Comm of
+s_light(Comm,Who,{R,J}) -> gen_server:cast(?MODULE,{light,Comm,Who,{R,J}}). % car is close to junction
+s_close_to_car(Comm,Who,OtherCar) -> gen_server:cast(?MODULE,{ctc,Comm,Who,OtherCar}). % car is close to another car
+s_accident(Comm,Who,Car2) -> gen_server:cast(?MODULE,{acc,Comm,Who,Car2}). % car got in accident
+car_finish_bypass(Comm,Who) -> case Comm of % car finished bypassing
                                  null -> cars:f_bypass(Who);
                                  _-> communication_tower:receive_message(Comm,Who,{f_bypass})
                                end.
-%  cars:f_bypass(Who).
-
-
-car_finish_turn(Comm,Who) ->
+car_finish_turn(Comm,Who) -> % car finished turning
   case Comm of
     null -> cars:f_turn(Who);
     _-> communication_tower:receive_message(Comm,Who,{f_turn})
   end.
-%  cars:f_turn(Who).
-
-deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}).
-deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}).
-update_car_location() ->gen_server:call(?MODULE,update_car).
-start_car(Name,Type,Start,PC)-> gen_server:cast(?MODULE,{start_car,Name,Type,Start,PC}).
-moved_car(Name,Type,Start,Location,Con,PC) -> gen_server:cast(?MODULE,{movedCar,Name,Type,Start,Location,Con,PC}).
-update_monitor(PC) ->io:format("~p XXXXXXXXXXXXXXXXXXXXXXXXXXXX ~n",[PC]), gen_server:cast(?MODULE,{nodedown,PC}).
+deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}). % delete car from ets
+deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}). % kill pid
+update_car_location() -> gen_server:call(?MODULE,update_car). % main requests car ets
+start_car(Name,Type,Start,PC)-> gen_server:cast(?MODULE,{start_car,Name,Type,Start,PC}). % initialize car process
+moved_car(Name,Type,Start,Location,Con,PC) -> gen_server:cast(?MODULE,{movedCar,Name,Type,Start,Location,Con,PC}). % car moved from one PC to another
+update_monitor(PC) -> gen_server:cast(?MODULE,{nodedown,PC}). % update the car monitor that a PC is down
 
 
 
@@ -384,7 +359,7 @@ update_monitor(PC) ->io:format("~p XXXXXXXXXXXXXXXXXXXXXXXXXXXX ~n",[PC]), gen_s
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
 
-handle_call(update_car, _, State) ->
+handle_call(update_car, _, State) -> % return list of car ets to main
   Car = ets:tab2list(cars),
   {reply, {ok,Car}, State};
 
@@ -402,84 +377,58 @@ handle_call(_Request, _From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-%handle_cast(_Request, State) ->
-%  {noreply, State}.
 
-
-handle_cast({nodedown,PC},State) ->
-
-
-  Pid = get(car_monitor),
+handle_cast({nodedown,PC},State) -> % send message to car monitor about a nodedown
+    Pid = get(car_monitor),
   Pid ! {nodedown,PC},
   {noreply, State};
 
-
-handle_cast({del,Pid},State) ->
-  timer:sleep(100),
+handle_cast({del,Pid},State) -> % call main to delete car from ets and delete from local ets
+  timer:sleep(120),
   io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
-  io:format("BBBBBBBBBB~n") ,
-  timer:sleep(20),
   rpc:call(get(home),main,delete_car,[Pid]),
- % rpc:call(home@ubuntu,main,delete_car,[Pid]),
   ets:delete(cars,Pid),
-
   {noreply, State};
-handle_cast({delP,Pid},State) ->
+
+handle_cast({delP,Pid},State) -> % kill process with pid PID
   exit(Pid,kill),
-  % timer:sleep(2000),
   io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
-  io:format("VVVVVVVVVVVVVVVVVVVVVVVVVVV~n") ,
-
   {noreply, State};
 
-handle_cast({movedCar,Name,Type,Start,Location,Con,PC},State) ->
+handle_cast({movedCar,Name,Type,Start,Location,Con,PC},State) -> % start a car in local PC when it moved into range
   cars:start(Name,get(car_monitor),Type,Start,Location,Con,PC),
   {noreply, State};
 
-
-
-handle_cast({light,Comm,Who,{_,J}}, State) -> % TODO: decide whether the car turns left, right or straight
-
-  List =  digraph:out_neighbours(get(graph),J),
+handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns left, right or straight TODO WAZE
+  List =  digraph:out_neighbours(get(graph),J), % get all possible directions the car can continue towards using digraph
   E = lists:nth(rand:uniform(length(List)),List),
   {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
   case Comm of
     null -> cars:turn(Who, {Dir, Road});
     _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
   end,
-%  cars:turn(Who, {Dir, Road}),
   {noreply, State};
 
 
-handle_cast({ctc,Comm,Who,OtherCar}, State) -> % TODO: decide whether the car slows down or bypasses the other car
-  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)),
+handle_cast({ctc,Comm,Who,OtherCar}, State) -> % decide whether the car bypasses the other car or stops
+  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
   Bool2 = checkBypass2(Who,ets:first(junction)),
   case {Bool1,Bool2} of
-    {true,true} ->
+    {true,true} -> % if it can, bypass
       case Comm of
         null -> cars:bypass(Who);
         _-> communication_tower:receive_message(Comm,Who,{bypass})
       end;
 
-%      cars:bypass(Who);
-    _ -> case sys:get_state(OtherCar) of
-           _ ->
-             case Comm of
+    _ ->     case Comm of % if it can't, stop
                null -> cars:stop(Who,OtherCar);
                _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
              end
-%             cars:stop(Who,OtherCar)
-
-
-
-           % stopping -> cars:stop(Who,OtherCar);
-           % _ -> cars:slow_down(Who)
-         end
   end,
 
   {noreply, State};
 
-handle_cast({start_car,Name,Type,Start,PC},State) ->
+handle_cast({start_car,Name,Type,Start,PC},State) -> % starts car in local PC
   cars:start(Name,get(car_monitor),Type,Start,PC),
   {noreply, State}.
 
@@ -535,12 +484,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+% this function checks if there is another car in front of the car he wants to bypass, and if there isn't, return true
 checkBypass(_,_,'$end_of_table') -> true;
 checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_}] =  ets:lookup(cars,Who),
   [{P2,[{X2,Y2},_,R2,_,_],_,_,_,_,_}] = ets:lookup(cars,FirstKey),
   if
     R == R2, P2 /= Who, P2 /= OtherCar ->
-      case Dir1 of
+      case Dir1 of % checks all cars that are going the same direction and same road
         left -> D = X-X2, if
                             D =< 200 , D >= 0 -> false;
                             true -> checkBypass(Who,OtherCar,ets:next(cars,P2))
@@ -563,6 +513,7 @@ checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_}] =  ets:
     true -> checkBypass(Who,OtherCar,ets:next(cars,FirstKey))
   end.
 
+% this function checks if there is a close junction when a car wants to bypass and if it can go straight if there is
 checkBypass2(_,'$end_of_table') -> true;
 checkBypass2(Who,Key) ->
   [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_}] =  ets:lookup(cars,Who),
@@ -570,19 +521,19 @@ checkBypass2(Who,Key) ->
 %  [{{R2,J},[{X2,Y2},_,{_,_}]}] = ets:lookup(junction,Key),
   case R == R2 of
     false -> checkBypass2(Who,ets:next(junction,Key));
-    _ -> case Dir1 of
+    _ -> case Dir1 of % checks distance from junctions on the same road
            left -> D = X-X2, if
 
-                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key));
-                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J),
+                               D >= 400  -> checkBypass2(Who,ets:next(junction,Key)); % if it's far, check the next junction
+                               D >= 50 -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
                                  L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
                                  L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                 case L2 of
+                                 case L2 of % if it can go straight, check next junction and if it can't, don't bypass
                                    [] -> false;
                                    _ -> checkBypass2(Who,ets:next(junction,Key))
                                  end;
                                D =< 0 -> checkBypass2(Who,ets:next(junction,Key));
-                               true -> false
+                               true -> false % if junction is too close, don't bypass
                              end;
 
            right ->  D = X2-X, if
@@ -625,7 +576,7 @@ checkBypass2(Who,Key) ->
          end
   end.
 
-
+% this function creates a graph with junctions as nodes and roads as edges
 roadGraph()->
   G =  digraph:new(),
   digraph:add_vertex(G,a),
@@ -704,6 +655,7 @@ roadGraph()->
 
   put(graph,G).
 
+% this function gets the label from and edge which includes the direction and road
 getEdgeLabel(_,[],_) -> io:format("error");
 getEdgeLabel(G,[H|T],V) ->
   {_,_,V2,Label} = digraph:edge(G,H),
@@ -712,6 +664,7 @@ getEdgeLabel(G,[H|T],V) ->
     _ -> getEdgeLabel(G,T,V)
   end.
 
+% this function gets all keys of ets
 keys(_TableName, '$end_of_table', ['$end_of_table'|Acc]) ->
   Acc;
 keys(TableName, CurrentKey, Acc) ->
