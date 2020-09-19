@@ -13,10 +13,11 @@
 -behaviour(wx_object).
 -include_lib("wx/include/wx.hrl").
 -include("header.hrl").
--export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2]).
+-export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2,
+  update_ets/1,list_to_ets/1]).
 -define(max_x, 1344).
 -define(max_y,890).
--define(Timer,34).
+-define(Timer,67).
 
 -define(SERVER, ?MODULE).
 -record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
@@ -109,108 +110,107 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
   bmpTruck = BmpTruck,bmpTrafficLight = BmpTrafficLight,
   bmpCommTower = BmpCommTower}) ->
 
-%handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
-%  bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-%  bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight}) ->
+
   DC2=wxPaintDC:new(Panel),
   wxDC:clear(DC2),
   wxDC:drawBitmap(DC2,BmpRmap,{0,0}),
 
   % draw all traffic lights
-  DrawTrafficA1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficA1, BmpTrafficLight, {1130, 35}),
-  DrawTrafficA2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficA2, BmpTrafficLight, {1130, 135}),
-  DrawTrafficB1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficB1, BmpTrafficLight, {847, 35}),
-  DrawTrafficB2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficB2, BmpTrafficLight, {917, 35}),
-  DrawTrafficC1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficC1, BmpTrafficLight, {634, 35}),
-  DrawTrafficC2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficC2, BmpTrafficLight, {634, 135}),
-  DrawTrafficD1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficD1, BmpTrafficLight, {280, 35}),
-  DrawTrafficD2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficD2, BmpTrafficLight, {280, 135}),
-  DrawTrafficE1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficE1, BmpTrafficLight, {138, 35}),
-  DrawTrafficE2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficE2, BmpTrafficLight, {75, 35}),
-  DrawTrafficF1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficF1, BmpTrafficLight, {75, 330}),
-  DrawTrafficF2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficF2, BmpTrafficLight, {75, 426}),
-  DrawTrafficG1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficG1, BmpTrafficLight, {355, 426}),
-  DrawTrafficG2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficG2, BmpTrafficLight, {418, 426}),
-  DrawTrafficH1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficH1, BmpTrafficLight, {571, 426}),
-  DrawTrafficH2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficH2, BmpTrafficLight, {634, 426}),
-  DrawTrafficI1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficI1, BmpTrafficLight, {713, 330}),
-  DrawTrafficI2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficI2, BmpTrafficLight, {713, 420}),
-  DrawTrafficJ1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficJ1, BmpTrafficLight, {1067, 426}),
-  DrawTrafficJ2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficJ2, BmpTrafficLight, {1130, 426}),
-  DrawTrafficK1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficK1, BmpTrafficLight, {1067, 660}),
-  DrawTrafficK2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficK2, BmpTrafficLight, {1130, 660}),
-  DrawTrafficL1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficL1, BmpTrafficLight, {634, 710}),
-  DrawTrafficL2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficL2, BmpTrafficLight, {634, 790}),
-  DrawTrafficM1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficM1, BmpTrafficLight, {355, 660}),
-  DrawTrafficM2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficM2, BmpTrafficLight, {418, 660}),
-  DrawTrafficN1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficN1, BmpTrafficLight, {571, 660}),
-  DrawTrafficN2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficN2, BmpTrafficLight, {634, 660}),
-  DrawTrafficO1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficO1, BmpTrafficLight, {75, 575}),
-  DrawTrafficO2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
+%  DrawTrafficA1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficA1, BmpTrafficLight, {1130, 35}),
+%  DrawTrafficA2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficA2, BmpTrafficLight, {1130, 135}),
+%  DrawTrafficB1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficB1, BmpTrafficLight, {847, 35}),
+%  DrawTrafficB2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficB2, BmpTrafficLight, {917, 35}),
+%  DrawTrafficC1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficC1, BmpTrafficLight, {634, 35}),
+%  DrawTrafficC2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficC2, BmpTrafficLight, {634, 135}),
+%  DrawTrafficD1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficD1, BmpTrafficLight, {280, 35}),
+%  DrawTrafficD2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficD2, BmpTrafficLight, {280, 135}),
+%  DrawTrafficE1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficE1, BmpTrafficLight, {138, 35}),
+%  DrawTrafficE2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficE2, BmpTrafficLight, {75, 35}),
+%  DrawTrafficF1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficF1, BmpTrafficLight, {75, 330}),
+%  DrawTrafficF2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficF2, BmpTrafficLight, {75, 426}),
+%  DrawTrafficG1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficG1, BmpTrafficLight, {355, 426}),
+%  DrawTrafficG2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficG2, BmpTrafficLight, {418, 426}),
+%  DrawTrafficH1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficH1, BmpTrafficLight, {571, 426}),
+%  DrawTrafficH2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficH2, BmpTrafficLight, {634, 426}),
+%  DrawTrafficI1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficI1, BmpTrafficLight, {713, 330}),
+%  DrawTrafficI2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficI2, BmpTrafficLight, {713, 420}),
+%  DrawTrafficJ1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficJ1, BmpTrafficLight, {1067, 426}),
+%  DrawTrafficJ2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficJ2, BmpTrafficLight, {1130, 426}),
+%  DrawTrafficK1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficK1, BmpTrafficLight, {1067, 660}),
+%  DrawTrafficK2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficK2, BmpTrafficLight, {1130, 660}),
+%  DrawTrafficL1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficL1, BmpTrafficLight, {634, 710}),
+%  DrawTrafficL2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficL2, BmpTrafficLight, {634, 790}),
+%  DrawTrafficM1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficM1, BmpTrafficLight, {355, 660}),
+%  DrawTrafficM2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficM2, BmpTrafficLight, {418, 660}),
+%  DrawTrafficN1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficN1, BmpTrafficLight, {571, 660}),
+%  DrawTrafficN2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficN2, BmpTrafficLight, {634, 660}),
+%  DrawTrafficO1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficO1, BmpTrafficLight, {75, 575}),
+%  DrawTrafficO2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawTrafficO2, BmpTrafficLight, {75, 660}),
 
   % draw all communication towers
-  DrawComm1 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm1, BmpCommTower, {1036, 38}),
-  DrawComm2 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm2, BmpCommTower, {793, 38}),
-  DrawComm3 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm3, BmpCommTower, {822, 336}),
-  DrawComm4 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm4, BmpCommTower, {1200, 336}),
-  DrawComm5 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm5, BmpCommTower, {483, 38}),
-  DrawComm6 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm6, BmpCommTower, {180, 38}),
-  DrawComm7 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm7, BmpCommTower, {483, 336}),
-  DrawComm8 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm8, BmpCommTower, {180, 336}),
-  DrawComm9 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm9, BmpCommTower, {20, 580}),
-  DrawComm10 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm10, BmpCommTower, {255, 580}),
-  DrawComm11 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm11, BmpCommTower, {547, 523}),
-  DrawComm12 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm12, BmpCommTower, {547, 763}),
-  DrawComm13 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm13, BmpCommTower, {817, 711}),
-  DrawComm14 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm14, BmpCommTower, {988, 550}),
-  DrawComm15 = wxClientDC:new(Panel),
-  wxDC:drawBitmap(DrawComm15, BmpCommTower, {1151, 743}),
+%  DrawComm1 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm1, BmpCommTower, {1036, 38}),
+%  DrawComm2 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm2, BmpCommTower, {793, 38}),
+%  DrawComm3 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm3, BmpCommTower, {822, 336}),
+%  DrawComm4 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm4, BmpCommTower, {1200, 336}),
+%  DrawComm5 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm5, BmpCommTower, {483, 38}),
+%  DrawComm6 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm6, BmpCommTower, {180, 38}),
+%  DrawComm7 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm7, BmpCommTower, {483, 336}),
+%  DrawComm8 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm8, BmpCommTower, {180, 336}),
+%  DrawComm9 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm9, BmpCommTower, {20, 580}),
+%  DrawComm10 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm10, BmpCommTower, {255, 580}),
+%  DrawComm11 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm11, BmpCommTower, {547, 523}),
+%  DrawComm12 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm12, BmpCommTower, {547, 763}),
+%  DrawComm13 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm13, BmpCommTower, {817, 711}),
+%  DrawComm14 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm14, BmpCommTower, {988, 550}),
+%  DrawComm15 = wxClientDC:new(Panel),
+%  wxDC:drawBitmap(DrawComm15, BmpCommTower, {1151, 743}),
 
 %  printTtafficLight(ets:first(junction),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed),
+
   printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
 
 handle_sync_event(_Event,_,State) ->
@@ -240,35 +240,35 @@ printCars('$end_of_table',_,_,_,_) -> ok; % this function paints all of the cars
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
   [{_,[{A,B},D,_,Type,_],_,_,_,_,_}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
-case Type of
-           red -> case D of
-                    left -> wxDC:drawBitmap(DI, BmpCar1, {A, B});
-                    down -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}),
-                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                    right -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
-                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                    up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
-                      BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-                  end;
-           grey -> case D of
-                     left -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
-                     down -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,-300,{A,B}),
-                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                     right -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),
-                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                     up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
-                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-                   end;
-           truck ->  case D of
-                       left -> wxDC:drawBitmap(DI, BmpTruck, {A, B});
-                       down -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,-300,{A,B}),
-                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                       right -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,600,{A,B}),
-                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                       up -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,300,{A,B}),
-                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-                     end
-         end,
+  case Type of
+    red -> case D of
+             left -> wxDC:drawBitmap(DI, BmpCar1, {A, B});
+             down -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}),
+               BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+             right -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
+               BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+             up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
+               BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+           end;
+    grey -> case D of
+              left -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
+              down -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+              right -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),
+                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+              up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
+                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+            end;
+    truck ->  case D of
+                left -> wxDC:drawBitmap(DI, BmpTruck, {A, B});
+                down -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                right -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,600,{A,B}),
+                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                up -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,300,{A,B}),
+                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+              end
+  end,
 
   printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpTruck).
 
@@ -276,10 +276,14 @@ case Type of
 
 handle_info(timer, State=#state{frame = Frame}) ->  % refresh screen for graphics
 
-  update_ets(get(?PC1)),
-  update_ets(get(?PC2)),
-  update_ets(get(?PC3)),
-  update_ets(get(?PC4)),
+  spawn(main,update_ets,[get(?PC1)]),
+  spawn(main,update_ets,[get(?PC2)]),
+  spawn(main,update_ets,[get(?PC3)]),
+  spawn(main,update_ets,[get(?PC4)]),
+ % update_ets(get(?PC1)),
+ % update_ets(get(?PC2)),
+ % update_ets(get(?PC3)),
+ % update_ets(get(?PC4)),
 
   wxWindow:refresh(Frame),
   erlang:send_after(?Timer,self(),timer),
