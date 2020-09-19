@@ -212,7 +212,7 @@ drive_straight(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message 
   {Bool1,To} = check_comms_d(Who,ets:first(comms)),
   case Bool1 of % if there is a close comm tower, send the message to it, else, send to a close car
     true -> communication_tower:receive_message(To,From,Msg);
-    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars),From),
       case Bool2 of
         true -> cars:send_msg(To2,{From,Msg});
 
@@ -229,7 +229,7 @@ drive_straight(cast,{ctc,Pid,OtherCar},State = #cars_state{}) -> % car got close
   {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
   case Bool1 of
     true -> communication_tower:receive_message(To,Pid,{s_close_to_car,OtherCar});
-    _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars),Pid),
       case Bool2 of
         true -> cars:send_msg(To2,{Pid,{s_close_to_car,OtherCar}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
         _->  server:s_close_to_car(null,Pid,OtherCar)
@@ -246,7 +246,7 @@ drive_straight(cast,{ctj,Pid,T,{R,J},LP},_) -> % car got close to junction, send
       {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
       case Bool1 of
         true -> communication_tower:receive_message(To,Pid,{s_light,{R,J}});
-        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars),Pid),
           case Bool2 of
             true -> cars:send_msg(To2,{Pid,{s_light,{R,J}}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
             _->  server:s_light(null,Pid,{R,J})
@@ -257,7 +257,7 @@ drive_straight(cast,{ctj,Pid,T,{R,J},LP},_) -> % car got close to junction, send
       {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
       case Bool1 of
         true -> communication_tower:receive_message(To,Pid,{s_light,{R,J}});
-        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
+        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars),Pid),
           case Bool2 of
             true -> cars:send_msg(To2,{Pid,{s_light,{R,J}}}),io:format("sent message to ~p from ~p~n",[To2,Pid]);
             _->  server:s_light(null,Pid,{R,J})
@@ -425,7 +425,7 @@ idle(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message to another
   {Bool1,To} = check_comms_d(Who,ets:first(comms)),
   case Bool1 of
     true -> communication_tower:receive_message(To,From,Msg);
-    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars),From),
       case Bool2 of
         true -> cars:send_msg(To2,{From,Msg});
         _->[{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
@@ -590,7 +590,7 @@ turning(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message to anot
   {Bool1,To} = check_comms_d(Who,ets:first(comms)),
   case Bool1 of
     true -> communication_tower:receive_message(To,From,Msg);
-    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars),From),
       case Bool2 of
         true -> cars:send_msg(To2,{From,Msg});
         _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
@@ -723,7 +723,7 @@ stopping(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message to ano
   {Bool1,To} = check_comms_d(Who,ets:first(comms)),
   case Bool1 of
     true -> communication_tower:receive_message(To,From,Msg);
-    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars),From),
       case Bool2 of
         true -> cars:send_msg(To2,{From,Msg});
         _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
@@ -913,7 +913,7 @@ bypassing(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message to an
   {Bool1,To} = check_comms_d(Who,ets:first(comms)),
   case Bool1 of
     true -> communication_tower:receive_message(To,From,Msg);
-    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars)),
+    _-> {Bool2,To2} = check_close_car(Who,ets:first(cars),From),
       case Bool2 of
         true -> cars:send_msg(To2,{From,Msg});
         _->  [{_,[To3]}] = ets:lookup(comms,ets:first(comms)),
@@ -984,15 +984,15 @@ check_comms_d(Pid,Key)->
   end.
 
 % this function checks if there is a close car, if there is return it
-check_close_car(_,'$end_of_table') -> {false,nal};
-check_close_car(Pid,Key)->
+check_close_car(_,'$end_of_table',_) -> {false,nal};
+check_close_car(Pid,Key,From)->
   [{_,[{X,Y},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Pid),
   [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key),
 
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
-    D =< 130, Pid /= Key -> {true,Key};
-    true -> check_close_car(Pid,ets:next(cars,Key))
+    D =< 130, Pid /= Key, Key /= From -> {true,Key};
+    true -> check_close_car(Pid,ets:next(cars,Key),From)
   end.
 
 

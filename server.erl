@@ -384,7 +384,7 @@ handle_cast({nodedown,PC},State) -> % send message to car monitor about a nodedo
   {noreply, State};
 
 handle_cast({del,Pid},State) -> % call main to delete car from ets and delete from local ets
-  timer:sleep(120),
+  timer:sleep(320),
   io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   rpc:call(get(home),main,delete_car,[Pid]),
   ets:delete(cars,Pid),

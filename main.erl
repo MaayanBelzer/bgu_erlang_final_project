@@ -20,7 +20,7 @@
 -define(Timer,67).
 
 -define(SERVER, ?MODULE).
--record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpTruck,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
+-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpCar3,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
 %%%-------------------------------------------------------------------
 
 start() ->
@@ -51,7 +51,7 @@ init([]) ->
   DC=wxPaintDC:new(Panel),
   Paint = wxBufferedPaintDC:new(Panel),
   % create bitmap to all images
-  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}=createBitMaps(),
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}=createBitMaps(),
 
 
   % connect panel
@@ -73,9 +73,9 @@ init([]) ->
   {ok,_}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
 
   % start all cars
-  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,red,st],?PC1]),
-  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,red,st],?PC1]),
-  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,red,st],?PC2]),
+  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,yellow,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,grey,st],?PC1]),
+  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,yellow,st],?PC2]),
   rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st],?PC2]),
   rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st],?PC3]),
   rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st],?PC3]),
@@ -88,7 +88,7 @@ init([]) ->
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
 
-    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower}}.
+    bmpCar3 = BmpCar3,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower}}.
 
 %%%-------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
 handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
   panel = Panel,
   bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-  bmpTruck = BmpTruck,bmpTrafficLight = BmpTrafficLight,
+  bmpCar3 = BmpCar3,bmpTrafficLight = BmpTrafficLight,
   bmpCommTower = BmpCommTower}) ->
 
 
@@ -211,7 +211,7 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
 
 %  printTtafficLight(ets:first(junction),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed),
 
-  printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpTruck);
+  printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpCar3);
 
 handle_sync_event(_Event,_,State) ->
   {noreply, State}.
@@ -237,7 +237,7 @@ handle_sync_event(_Event,_,State) ->
 %end.
 
 printCars('$end_of_table',_,_,_,_) -> ok; % this function paints all of the cars
-printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
+printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
   [{_,[{A,B},D,_,Type,_],_,_,_,_,_}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Type of
@@ -259,18 +259,25 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpTruck) ->
               up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
                 BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
             end;
-    truck ->  case D of
-                left -> wxDC:drawBitmap(DI, BmpTruck, {A, B});
-                down -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,-300,{A,B}),
+    yellow ->  case D of
+                left -> wxDC:drawBitmap(DI, BmpCar3, {A, B});
+                down -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,-300,{A,B}),
                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                right -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,600,{A,B}),
+                right -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,600,{A,B}),
                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                up -> Im = wxBitmap:convertToImage(BmpTruck), Im2 = wxImage:rotate(Im,300,{A,B}),
+                up -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),
                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-              end
+              end;
+    Error ->  io:format("~p~n AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",[Error])
   end,
 
-  printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpTruck).
+  case ets:member(cars,Key) of
+    true -> printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpCar3);
+    _ -> ok
+  end.
+  %printCars(Next,Panel,BmpCar1,BmpCar2,BmpCar3).
+
+
 
 
 
@@ -347,11 +354,11 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(Car2),
   wxImage:destroy(Car2c),
 
-  Truck = wxImage:new("truck.png"),
-  Truckc = wxImage:scale(Truck,170,15),
-  BmpTruck = wxBitmap:new(Truckc),
-  wxImage:destroy(Truck),
-  wxImage:destroy(Truckc),
+  Car3 = wxImage:new("car3.png"),
+  Car3c = wxImage:scale(Car3,43,25),
+  BmpCar3 = wxBitmap:new(Car3c),
+  wxImage:destroy(Car3),
+  wxImage:destroy(Car3c),
 
 
   Antenna = wxImage:new("antenna.png"),
@@ -385,7 +392,7 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(CommTower),
   wxImage:destroy(CommTowerc),
 
-  {BmpRmap,BmpCar1,BmpCar2,BmpTruck,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}.
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}.
 
 % this function prints a car pid and state if user clicked on it
 search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;

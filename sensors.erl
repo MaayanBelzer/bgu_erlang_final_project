@@ -378,12 +378,14 @@ car_monitor(PC1,PC2,PC3,PC4) ->
     {_, _, _, Pid, Reason} ->  case Reason of % a process is down, check reason
                                  {outOfRange,Name,_,Start,Speed} -> % if a car is out of range start a new car in the PC where the old one started
                                    io:format("~p killed with reason outOfRange ~n",[Pid]),
-                                   [{X,Y},_,_,_,_]  = Start,
+                                   [{X,Y},Dir,Road,_,_]  = Start,
+                                   E = lists:nth(rand:uniform(3),[yellow,red,grey]),
+                                   NewStart = [{X,Y},Dir,Road,E,st],
                                    if
-                                     X >= 721, Y =< 472 -> rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 721, Y >= 472 -> rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 721, Y =< 472 -> rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 721, Y >= 472 -> rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 721, Y =< 472 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 721, Y >= 472 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 721, Y =< 472 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 721, Y >= 472 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;
