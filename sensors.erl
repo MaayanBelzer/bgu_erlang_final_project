@@ -17,18 +17,18 @@
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
 close_to_car(Pid,FirstKey) ->
 
-  [{_,[{X,Y},Dir1,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates and direction
+  [{_,[{X,Y},Dir1,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates and direction
   Bool = ets:member(cars,FirstKey), % checks if the next car in ets is alive
   if
     Bool == true->
       Bool2 = ets:member(cars,FirstKey),
       if
-        Bool2 == true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_}] = ets:lookup(cars,FirstKey); % if it is, get its coordinates and direction
-        true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_}] = ets:lookup(cars,ets:first(cars)) % else, get the first car in ets
+        Bool2 == true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,FirstKey); % if it is, get its coordinates and direction
+        true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,ets:first(cars)) % else, get the first car in ets
       end;
 
 
-    true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
+    true -> [{P2,[{X2,Y2},Dir2,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
   end,
   case Dir1 == Dir2 of % checks if the directions are equal
     false -> case ets:member(cars,P2) of % if not, check next car in ets
@@ -108,7 +108,7 @@ close_to_junction(Pid,FirstKey) ->
 
 
 
-  [{_,[{X,Y},Dir1,R1,_,_],_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates, direction and road
+  [{_,[{X,Y},Dir1,R1,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates, direction and road
 
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey), % get junction coordinates, road and the  traffic light pid
 
@@ -166,10 +166,10 @@ close_to_junction(Pid,FirstKey) ->
 
 % this function checks whether the other car in front of the car is still close
 far_from_car(Who,Other_car) ->
-  [{_,[{X,Y},Dir1,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Who), % get the car coordinates and direction
+  [{_,[{X,Y},Dir1,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Who), % get the car coordinates and direction
   Bool = ets:member(cars,Other_car),
   if
-    Bool == true -> [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Other_car), % if other car is still alive, check distance to car
+    Bool == true -> [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Other_car), % if other car is still alive, check distance to car
       case Dir1 of
         left -> D = X-X2, if
                             D >= 100  -> cars:far_from_car(Who); % if the other car is far enough, send event to car
@@ -197,8 +197,8 @@ far_from_car(Who,Other_car) ->
 
 % this function checks if car is out of range of the screen or if the car has moved to a different PC
 outOfRange(Pid)->
-  [{_,[{X,Y},Dir,R,Type,Turn],_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
-  Dx = X - 721, % check distance from borders of different PCs
+  [{_,[{X,Y},Dir,R,Type,Turn],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
+  Dx = X - 735, % check distance from borders of different PCs
   Dy = Y - 472,
   if % check if the car is close enough to borders of PC, if it is, send event to car to change PC according to coordinates
 
@@ -257,22 +257,22 @@ sync_traffic([H|T]) ->
 % this function checks if there has been an accident
 car_accident(Pid,'$end_of_table') -> car_accident(Pid,ets:first(cars));
 car_accident(Pid,Key) ->
-  [{_,[{X,Y},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates
+  [{_,[{X,Y},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates
   Bool = ets:member(cars,Key),
   if
     Bool == true->
       Bool2 = ets:member(cars,Key),
       if % get other car coordinates
-        Bool2 == true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key);
-        true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
+        Bool2 == true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Key);
+        true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
       end;
-    true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
+    true -> [{P2,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,ets:first(cars))
   end,
 
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % calculate distance between cars
   if
-    D =< 20, Pid /= P2 -> % if cars are too close, send accident event to cars
-      cars:accident(Pid,P2);
+    D =< 23, Pid /= P2 -> % if cars are too close, send accident event to cars
+      cars:accident(Pid,P2),server:smoke(Pid,{X,Y},Key,{X2,Y2});
     true ->  case ets:member(cars,P2) of % if cars are not close, check next car
                true ->  car_accident(Pid,ets:next(cars,P2));
                _-> car_accident(Pid,ets:first(cars))
@@ -282,64 +282,64 @@ car_accident(Pid,Key) ->
 
 % this function checks if a car has deviated from the road
 car_dev(Pid) ->
-  [{_,[{X,Y},Dir,Road,Type,_],_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
+  [{_,[{X,Y},Dir,Road,Type,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
   case Road of % checks which road the car is on and then checks distance from the center of the road, if it's too far, correct the coordinates
     r1-> D = abs(Y - 106), if
-                        D >= 21 -> ets:update_element(cars,Pid,[{2,[{X,93},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                        true -> car_dev(Pid)
-                      end  ;
+                             D >= 18 -> ets:update_element(cars,Pid,[{2,[{X,93},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                             true -> car_dev(Pid)
+                           end  ;
     r2->  D = abs(X - 114), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{101,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end  ;
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{101,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end  ;
     r3->  D = abs(Y - 404), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{X,417},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end  ;
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{X,417},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end  ;
     r4->  D =abs( X - 610), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{623,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end  ;
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{623,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end  ;
     r5->  D = abs(Y - 641), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{X,654},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end  ;
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{X,654},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end  ;
     r6->  D = abs(X - 1104), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{1117,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end  ;
+                               D >= 18 -> ets:update_element(cars,Pid,[{2,[{1117,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                               true -> car_dev(Pid)
+                             end  ;
     r7-> D =abs( Y - 779), if
-                        D >= 21 -> ets:update_element(cars,Pid,[{2,[{X,766},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                        true -> car_dev(Pid)
-                      end  ;
+                             D >= 18 -> ets:update_element(cars,Pid,[{2,[{X,766},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                             true -> car_dev(Pid)
+                           end  ;
     r8->  D = abs(X - 249), if
-                          D >= 21 -> ets:update_element(cars,Pid,[{2,[{262,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                          true -> car_dev(Pid)
-                        end  ;
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{262,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end  ;
     r9-> D = abs(Y - 638), if
-                        D >= 21 -> ets:update_element(cars,Pid,[{2,[{X,651},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                        true -> car_dev(Pid)
-                      end  ;
+                             D >= 18 -> ets:update_element(cars,Pid,[{2,[{X,651},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                             true -> car_dev(Pid)
+                           end  ;
     r10->  D = abs(X - 750), if
-                          D >= 21 -> ets:update_element(cars,Pid,[{2,[{737,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
-                          true -> car_dev(Pid)
-                        end  ;
+                               D >= 18 -> ets:update_element(cars,Pid,[{2,[{737,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
+                               true -> car_dev(Pid)
+                             end  ;
     r12->  D = abs(X - 888), if
-                          D >= 21 -> ets:update_element(cars,Pid,[{2,[{875,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
-                          true -> car_dev(Pid)
-                        end  ;
+                               D >= 18 -> ets:update_element(cars,Pid,[{2,[{875,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
+                               true -> car_dev(Pid)
+                             end  ;
     r14->  D = abs(X - 392), if
-                          D >= 21 -> ets:update_element(cars,Pid,[{2,[{405,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                          true -> car_dev(Pid)
-                        end  ;
+                               D >= 18 -> ets:update_element(cars,Pid,[{2,[{405,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                               true -> car_dev(Pid)
+                             end  ;
     r16->  D = abs(X - 392), if
-                          D >= 21 -> ets:update_element(cars,Pid,[{2,[{405,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
-                          true -> car_dev(Pid)
-                        end  ;
+                               D >= 18 -> ets:update_element(cars,Pid,[{2,[{405,Y},Dir,Road,Type,st]}]),car_dev(Pid) ;
+                               true -> car_dev(Pid)
+                             end  ;
     r18-> D = abs(X - 887), if
-                         D >= 21 -> ets:update_element(cars,Pid,[{2,[{874,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
-                         true -> car_dev(Pid)
-                       end
+                              D >= 18 -> ets:update_element(cars,Pid,[{2,[{874,Y },Dir,Road,Type,st]}]),car_dev(Pid) ;
+                              true -> car_dev(Pid)
+                            end
 
   end.
 
@@ -390,10 +390,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
 
                                    end;
                                  % move car to different PC:
-                                 {move_to_comp1,Name,Start,Speed,C,_,_,Con} ->  rpc:call(PC1,server,moved_car,[Name,Speed,Start,C,Con,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp2,Name,Start,Speed,C,_,_,Con} ->  rpc:call(PC2,server,moved_car,[Name,Speed,Start,C,Con,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp3,Name,Start,Speed,C,_,_,Con} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp4,Name,Start,Speed,C,_,_,Con} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp1,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC1,server,moved_car,[Name,Speed,Start,C,Con,PC1,Nev]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp2,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC2,server,moved_car,[Name,Speed,Start,C,Con,PC2,Nev]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp3,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3,Nev]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nev]),car_monitor(PC1,PC2,PC3,PC4);
 
 
                                  {accident,Name,Mon,Start,Speed} -> io:format("~p killed in accident ~n",[Pid]), % if there was an accident, start a new car where the old one started

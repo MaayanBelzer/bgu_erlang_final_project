@@ -14,13 +14,13 @@
 -include_lib("wx/include/wx.hrl").
 -include("header.hrl").
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2,
-  update_ets/1,list_to_ets/1]).
+  update_ets/1,list_to_ets/1,start_smoke/4,del_smoke/1,main_navigation/6,check_cars/1]).
 -define(max_x, 1344).
 -define(max_y,890).
 -define(Timer,67).
 
 -define(SERVER, ?MODULE).
--record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpCar3,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key}).
+-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpCar3,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key,bmpsmoke}).
 %%%-------------------------------------------------------------------
 
 start() ->
@@ -28,6 +28,7 @@ start() ->
 
 init([]) ->
   ets:new(cars,[set,public,named_table]), % initialize car ets
+  ets:new(smoke,[set,public,named_table]),
   net_kernel:monitor_nodes(true), % monitor nodes
   timer:sleep(200),
   net_kernel:connect_node(?PC1), % connect all nodes
@@ -51,7 +52,7 @@ init([]) ->
   DC=wxPaintDC:new(Panel),
   Paint = wxBufferedPaintDC:new(Panel),
   % create bitmap to all images
-  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}=createBitMaps(),
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower,BmpSmoke}=createBitMaps(),
 
 
   % connect panel
@@ -63,32 +64,29 @@ init([]) ->
 
   wxPanel:connect(Panel, paint, [callback]),
   wxPanel:connect (Panel, left_down),
-%  wxPanel:connect (Panel, right_down),
+  wxPanel:connect (Panel, right_down),
   wxFrame:connect(Frame, close_window),
 
   % start all servers
-  {ok,_}=rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
-  {ok,_}=rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
-  {ok,_}=rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
-  {ok,_}=rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  rpc:call(?PC1,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  rpc:call(?PC2,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  rpc:call(?PC3,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
+  rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
 
   % start all cars
-  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,yellow,st],?PC1]),
-  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,grey,st],?PC1]),
-  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,yellow,st],?PC2]),
-  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st],?PC2]),
-  rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st],?PC3]),
-  rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st],?PC3]),
-  rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st],?PC3]),
-  rpc:call(?PC1,server,start_car,[h,20,[{1117,890},up,r6,red,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[a,5,[{874,0},down,r18,grey,st],?PC1]),
+  rpc:call(?PC2,server,start_car,[e,5,[{101,0},down,r2,yellow,st],?PC2]),
+  rpc:call(?PC2,server,start_car,[g,5,[{0,417},right,r3,red,st],?PC2]),
+  rpc:call(?PC3,server,start_car,[b,10,[{0,651},right,r9,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[c,5,[{405,890},up,r14,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[d,10,[{623,890},up,r4,red,st],?PC3]),
+  rpc:call(?PC1,server,start_car,[h,10,[{1117,890},up,r6,red,st],?PC1]),
 
-%  {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
-%    bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-%    bmpTruck = BmpTruck,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight }}.
+
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-
-    bmpCar3 = BmpCar3,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower}}.
+    bmpCar3 = BmpCar3,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower, bmpsmoke= BmpSmoke}}.
 
 %%%-------------------------------------------------------------------
 
@@ -99,16 +97,43 @@ handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) -> % close 
   {stop,normal,State};
 
 handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
-  io:format("~p~n", [{X,Y}]),
-  search_close_car(ets:first(cars),{X,Y}),
+
+  % main_navigation(X,Y,get(?PC1),get(?PC2),get(?PC2),get(?PC4)),
+  spawn(main,main_navigation,[X,Y,get(?PC1),get(?PC2),get(?PC2),get(?PC4)]),
+
+
+
+%  if
+%    X >= 721, Y =< 472 -> rpc:call(get(?PC1),server,navigation,[X,Y]);
+%    X >= 721, Y >= 472 -> rpc:call(get(?PC4),server,navigation,[X,Y]);
+%    X =< 721, Y =< 472 -> rpc:call(get(?PC2),server,navigation,[X,Y]);
+%    X =< 721, Y >= 472 -> rpc:call(get(?PC3),server,navigation,[X,Y]);
+%    true -> error
+%  end,
+
+%  io:format("~p~n", [{X,Y}]),
+%  search_close_car(ets:first(cars),{X,Y}),
 %  search_close_junction(ets:first(junction),{X,Y}),
+  {noreply,State};
+
+handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) ->
+  if
+    X >= 721, Y =< 472 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
+    X >= 721, Y >= 472 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
+    X =< 721, Y =< 472 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
+    X =< 721, Y >= 472 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
+    true -> error
+  end,
+
   {noreply,State}.
 
 handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
   panel = Panel,
   bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-  bmpCar3 = BmpCar3,bmpTrafficLight = BmpTrafficLight,
-  bmpCommTower = BmpCommTower}) ->
+  bmpCar3 = BmpCar3,
+  %bmpTrafficLight = BmpTrafficLight,
+  %bmpCommTower = BmpCommTower,
+  bmpsmoke = BmpSmoke}) ->
 
 
   DC2=wxPaintDC:new(Panel),
@@ -211,7 +236,8 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
 
 %  printTtafficLight(ets:first(junction),Panel,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed),
 
-  printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpCar3);
+  printCars(ets:first(cars),Panel,BmpCar1,BmpCar2,BmpCar3),
+  printsmoke(ets:first(smoke),Panel,BmpSmoke);
 
 handle_sync_event(_Event,_,State) ->
   {noreply, State}.
@@ -236,9 +262,16 @@ handle_sync_event(_Event,_,State) ->
 %end
 %end.
 
+printsmoke('$end_of_table',_,_) -> ok; % this function paints all of the cars
+printsmoke(Key,Panel,BmpSmoke) ->
+  DI =wxClientDC:new(Panel),
+  [{_,{A,B}}] = ets:lookup(smoke,Key),
+  wxDC:drawBitmap(DI, BmpSmoke, {A - 10, B - 10}).
+
+
 printCars('$end_of_table',_,_,_,_) -> ok; % this function paints all of the cars
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
-  [{_,[{A,B},D,_,Type,_],_,_,_,_,_}] = ets:lookup(cars,Key),
+  [{_,[{A,B},D,_,Type,_],_,_,_,_,_,_}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Type of
     red -> case D of
@@ -248,7 +281,8 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
              right -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
              up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
-               BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+               BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+             Error -> io:format("error in printCars, D = ~p~n",[Error])
            end;
     grey -> case D of
               left -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
@@ -257,25 +291,27 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
               right -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),
                 BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
               up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
-                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
+                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+              Error -> io:format("error in printCars, D = ~p~n",[Error])
             end;
     yellow ->  case D of
-                left -> wxDC:drawBitmap(DI, BmpCar3, {A, B});
-                down -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,-300,{A,B}),
-                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                right -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,600,{A,B}),
-                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                up -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),
-                  BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
-              end;
-    Error ->  io:format("~p~n AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",[Error])
+                 left -> wxDC:drawBitmap(DI, BmpCar3, {A, B});
+                 down -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                 right -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,600,{A,B}),
+                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                 up -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),
+                   BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
+                 Error -> io:format("error in printCars, D = ~p~n",[Error])
+               end;
+    Error ->  io:format("error in printCar for reason ~p~n",[Error])
   end,
 
   case ets:member(cars,Key) of
     true -> printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpCar3);
     _ -> ok
   end.
-  %printCars(Next,Panel,BmpCar1,BmpCar2,BmpCar3).
+
 
 
 
@@ -287,10 +323,10 @@ handle_info(timer, State=#state{frame = Frame}) ->  % refresh screen for graphic
   spawn(main,update_ets,[get(?PC2)]),
   spawn(main,update_ets,[get(?PC3)]),
   spawn(main,update_ets,[get(?PC4)]),
- % update_ets(get(?PC1)),
- % update_ets(get(?PC2)),
- % update_ets(get(?PC3)),
- % update_ets(get(?PC4)),
+  % update_ets(get(?PC1)),
+  % update_ets(get(?PC2)),
+  % update_ets(get(?PC3)),
+  % update_ets(get(?PC4)),
 
   wxWindow:refresh(Frame),
   erlang:send_after(?Timer,self(),timer),
@@ -333,7 +369,17 @@ handle_info({nodedown,PC},State)-> % if a node is down check which PC, move resp
 
 handle_cast({delete_car, Pid},State) -> % delete car from ets
   ets:delete(cars,Pid),
+  {noreply,State};
+
+handle_cast({smoke,Car1,L1,Car2,L2},State) -> % insert smoke location to the ets
+  ets:insert(smoke,{Car1,L1}),
+  ets:insert(smoke,{Car2,L2}),
+  {noreply,State};
+
+handle_cast({del_smoke,_},State) -> % delete smoke from ets
+  ets:delete_all_objects(smoke),
   {noreply,State}.
+
 
 createBitMaps() ->         % create bitmap to all images
   Rmap = wxImage:new("rmap.jpg"),
@@ -359,6 +405,12 @@ createBitMaps() ->         % create bitmap to all images
   BmpCar3 = wxBitmap:new(Car3c),
   wxImage:destroy(Car3),
   wxImage:destroy(Car3c),
+
+  Smoke = wxImage:new("smoke.png"),
+  Smokec = wxImage:scale(Smoke,50,50),
+  BmpSmoke = wxBitmap:new(Smokec),
+  wxImage:destroy(Smoke),
+  wxImage:destroy(Smokec),
 
 
   Antenna = wxImage:new("antenna.png"),
@@ -392,19 +444,21 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(CommTower),
   wxImage:destroy(CommTowerc),
 
-  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower}.
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower,BmpSmoke}.
 
 % this function prints a car pid and state if user clicked on it
-search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
-search_close_car(Key,{X,Y}) ->
-  [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key),
-  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
-  if
 
-    D =< 40 -> io:format("~p~n",[Key]),io:format("~p~n",[sys:get_state(Key)]), ok;
+%search_close_car('$end_of_table',_) ->io:format("there is no close car ~n") ,ok;
+%search_close_car(Key,{X,Y}) ->
+%  [{_,[{X2,Y2},_,_,_,_],_,_,_,_,_}] = ets:lookup(cars,Key),
+%  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+%  if
 
-    true-> search_close_car(ets:next(cars,Key),{X,Y})
-  end.
+%    D =< 40 -> io:format("~p~n",[Key]),io:format("~p~n",[sys:get_state(Key)]), ok;
+
+%    true-> search_close_car(ets:next(cars,Key),{X,Y})
+%  end.
+
 
 %search_close_junction('$end_of_table',_) ->io:format("there is no close junction ~n") ,ok;
 %search_close_junction(Key,{X,Y}) ->
@@ -414,6 +468,7 @@ search_close_car(Key,{X,Y}) ->
 %    D =< 70 -> io:format("~p~n",[{R,J}]), ok;
 %    true-> search_close_junction(ets:next(junction,Key),{X,Y})
 %  end.
+
 
 % this function requests the ets from each server and calls to function to update ets
 update_ets(PC) ->
@@ -437,15 +492,17 @@ list_to_ets(List) ->
 
 
 delete_car(Pid) -> wx_object:cast(main,{delete_car, Pid}). % create delete car event
+start_smoke(Car1,L1,Car2,L2) -> wx_object:cast(main,{smoke,Car1,L1,Car2,L2}).% create start smoke event
+del_smoke(Pid) -> wx_object:cast(main,{del_smoke,Pid}).% create delete smoke event
 
 % this function checks which PC is down and moves all car from fallen PC to new PC
 move_car(_,'$end_of_table') -> ok;
 move_car(PcDown,Key) ->
-  [{_,Location,Name,Start,Type,Con,PC}] = ets:lookup(cars,Key),
+  [{_,Location,Name,Start,Type,Con,PC,Nev}] = ets:lookup(cars,Key),
 
   case PcDown of
     ?PC1 -> if
-              PC == ?PC1  -> rpc:call(?PC2,server,moved_car,[Name,Type,Start,Location,Con,?PC2]), % call to function in server
+              PC == ?PC1  -> rpc:call(?PC2,server,moved_car,[Name,Type,Start,Location,Con,?PC2,Nev]), % call to function in server
                 Next = ets:next(cars,Key), % get next car
                 ets:delete(cars,Key), % delete car from ets
                 move_car(PcDown,Next) ; % move next car
@@ -454,7 +511,7 @@ move_car(PcDown,Key) ->
 
     ?PC2 -> if
 
-              PC == ?PC2 -> rpc:call(?PC3,server,moved_car,[Name,Type,Start,Location,Con,?PC3]),
+              PC == ?PC2 -> rpc:call(?PC3,server,moved_car,[Name,Type,Start,Location,Con,?PC3,Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next);
@@ -463,7 +520,7 @@ move_car(PcDown,Key) ->
 
     ?PC3 -> if
 
-              PC == ?PC3 -> rpc:call(?PC4,server,moved_car,[Name,Type,Start,Location,Con,?PC4]),
+              PC == ?PC3 -> rpc:call(?PC4,server,moved_car,[Name,Type,Start,Location,Con,?PC4,Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
@@ -472,7 +529,7 @@ move_car(PcDown,Key) ->
 
     ?PC4 -> if
 
-              PC == ?PC4 -> rpc:call(?PC1,server,moved_car,[Name,Type,Start,Location,Con,?PC1]),
+              PC == ?PC4 -> rpc:call(?PC1,server,moved_car,[Name,Type,Start,Location,Con,?PC1,Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
@@ -487,3 +544,41 @@ backup_pc(PCDown,NewPC) ->
   Fun = fun(E) -> put(E,NewPC) end,
   lists:foreach(Fun,L2), ok.
 
+
+main_navigation(X,Y,PC1,PC2,PC3,PC4) ->
+  Result =  check_cars(ets:first(cars)),
+  case Result of
+    null -> if
+              X >= 721, Y =< 472 -> rpc:call(PC1,server,server_search_close_car,[X,Y]);
+              X >= 721, Y >= 472 -> rpc:call(PC4,server,server_search_close_car,[X,Y]);
+              X =< 721, Y =< 472 -> rpc:call(PC2,server,server_search_close_car,[X,Y]);
+              X =< 721, Y >= 472 -> rpc:call(PC3,server,server_search_close_car,[X,Y]);
+              true -> error
+            end;
+
+    Pid -> io:format("Pid was founded: ~p~n",[Pid]), Result2 = rpc:call(PC1,server,server_search_close_junc,[X,Y]),
+
+
+      case Result2 of
+        null -> io:format("error in nev, cant find close junction");
+        Dest ->io:format("Dest was founded: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid),
+          rpc:call(PC,server,update_car_nev,[Pid,Dest])
+
+      end
+  end,
+  ok.
+
+
+
+
+
+check_cars('$end_of_table') -> io:format("there is no car in process ~n"), null;
+check_cars(Key) ->  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
+  case Nev of
+    in_process -> Key;
+    _-> check_cars(ets:next(cars,Key))
+
+   % null -> check_cars(ets:next(cars,Key));
+   % _-> Key
+
+  end.
