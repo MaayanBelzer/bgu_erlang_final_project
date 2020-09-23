@@ -202,30 +202,37 @@ outOfRange(Pid)->
   Dy = Y - 472,
   if % check if the car is close enough to borders of PC, if it is, send event to car to change PC according to coordinates
 
-    X >= 721,Y =< 472, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 735,Y =< 472, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_2),
-      io:format("move from pc_1 to pc_2~n"),outOfRange(Pid);
-    X >= 721,Y =< 472, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
+%      io:format("move from pc_1 to pc_2~n"),
+      outOfRange(Pid);
+    X >= 735,Y =< 472, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_4),
-      io:format("move from pc_1 to pc_4~n"),outOfRange(Pid);
+%      io:format("move from pc_1 to pc_4~n"),
+      outOfRange(Pid);
 
-    X =< 721,Y =< 472 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
+    X =< 735,Y =< 472 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_1),
-      io:format("move from pc_2 to pc_1~n"),outOfRange(Pid);
-    X =< 721,Y =< 472 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
+%      io:format("move from pc_2 to pc_1~n"),
+      outOfRange(Pid);
+    X =< 735,Y =< 472 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_3),
-      io:format("move from pc_2 to pc_3~n"),outOfRange(Pid);
+%      io:format("move from pc_2 to pc_3~n"),
+      outOfRange(Pid);
 
-    X =< 721,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
+    X =< 735,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_3,pc_2),
-      io:format("move from pc_3 to pc_2~n"),outOfRange(Pid);
+%      io:format("move from pc_3 to pc_2~n"),
+      outOfRange(Pid);
 
-    X >= 721,Y >= 472,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 735,Y >= 472,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_3),
-      io:format("move from pc_4 to pc_3~n"),outOfRange(Pid);
-    X >= 721,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
+%      io:format("move from pc_4 to pc_3~n"),
+      outOfRange(Pid);
+    X >= 735,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_1),
-      io:format("move from pc_4 to pc_1~n"),outOfRange(Pid);
+%      io:format("move from pc_4 to pc_1~n"),
+      outOfRange(Pid);
 
     X < 0; Y < 0; X > 1344; Y > 890 -> cars:kill(Pid); % if car has left the screen, send event to kill it
 
@@ -271,7 +278,7 @@ car_accident(Pid,Key) ->
 
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % calculate distance between cars
   if
-    D =< 23, Pid /= P2 -> % if cars are too close, send accident event to cars
+    D =< 25, Pid /= P2 -> % if cars are too close, send accident event to cars
       cars:accident(Pid,P2),server:smoke(Pid,{X,Y},Key,{X2,Y2});
     true ->  case ets:member(cars,P2) of % if cars are not close, check next car
                true ->  car_accident(Pid,ets:next(cars,P2));
@@ -377,15 +384,15 @@ car_monitor(PC1,PC2,PC3,PC4) ->
     {add_to_monitor,Pid} -> monitor(process, Pid),car_monitor(PC1,PC2,PC3,PC4); % add a new process to the monitor
     {_, _, _, Pid, Reason} ->  case Reason of % a process is down, check reason
                                  {outOfRange,Name,_,Start,Speed} -> % if a car is out of range start a new car in the PC where the old one started
-                                   io:format("~p killed with reason outOfRange ~n",[Pid]),
+                                   %io:format("~p killed with reason outOfRange ~n",[Pid]),
                                    [{X,Y},Dir,Road,_,_]  = Start,
                                    E = lists:nth(rand:uniform(3),[yellow,red,grey]),
                                    NewStart = [{X,Y},Dir,Road,E,st],
                                    if
-                                     X >= 721, Y =< 472 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 721, Y >= 472 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 721, Y =< 472 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 721, Y >= 472 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 735, Y =< 472 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 735, Y >= 472 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 735, Y =< 472 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 735, Y >= 472 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;
@@ -402,7 +409,8 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {badarg, [_, {_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if a sensor died, spawn a new one
                                    SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor(PC1,PC2,PC3,PC4);
                                  {badarg, [_, {_,car_accident,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
-                                   SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor(PC1,PC2,PC3,PC4);
+                                   SensorPid = spawn(sensors,car_accident,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor(PC1,PC2,PC3,PC4);
+                                 killed -> car_monitor(PC1,PC2,PC3,PC4);
                                  Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),
                                    car_monitor(PC1,PC2,PC3,PC4)
                                end

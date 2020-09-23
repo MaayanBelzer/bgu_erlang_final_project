@@ -14,7 +14,8 @@
 -include_lib("wx/include/wx.hrl").
 -include("header.hrl").
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,delete_car/1,handle_cast/2,
-  update_ets/1,list_to_ets/1,start_smoke/4,del_smoke/1,main_navigation/6,check_cars/1]).
+  update_ets/1,list_to_ets/1,start_smoke/4,del_smoke/1,main_navigation/6,check_cars/1,
+  main_cars_mon/5,check_PC/6]).
 -define(max_x, 1344).
 -define(max_y,890).
 -define(Timer,67).
@@ -84,6 +85,8 @@ init([]) ->
   rpc:call(?PC1,server,start_car,[h,10,[{1117,890},up,r6,red,st],?PC1]),
 
 
+  spawn(main,main_cars_mon,[ets:first(cars),?PC1,?PC2,?PC3,?PC4]),
+
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
     bmpCar3 = BmpCar3,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower, bmpsmoke= BmpSmoke}}.
@@ -98,8 +101,8 @@ handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) -> % close 
 
 handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
 
-  % main_navigation(X,Y,get(?PC1),get(?PC2),get(?PC2),get(?PC4)),
-  spawn(main,main_navigation,[X,Y,get(?PC1),get(?PC2),get(?PC2),get(?PC4)]),
+  % main_navigation(X,Y,get(?PC1),get(?PC2),get(?PC3),get(?PC4)),
+  spawn(main,main_navigation,[X,Y,get(?PC1),get(?PC2),get(?PC3),get(?PC4)]),
 
 
 
@@ -282,7 +285,9 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
              up -> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
                BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-             Error -> io:format("error in printCars, D = ~p~n",[Error])
+             Error -> io:format("error in printCars, D = ~p~n",[Error]),
+               io:format("error in printCars, ~p~n",[ets:lookup(cars,Key)]),
+               ets:delete(cars,Key)
            end;
     grey -> case D of
               left -> wxDC:drawBitmap(DI, BmpCar2, {A, B});
@@ -292,7 +297,9 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
                 BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
               up -> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
                 BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-              Error -> io:format("error in printCars, D = ~p~n",[Error])
+              Error -> io:format("error in printCars, D = ~p~n",[Error]),
+                io:format("error in printCars, ~p~n",[ets:lookup(cars,Key)]),
+                ets:delete(cars,Key)
             end;
     yellow ->  case D of
                  left -> wxDC:drawBitmap(DI, BmpCar3, {A, B});
@@ -302,9 +309,13 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3) ->
                    BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                  up -> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),
                    BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
-                 Error -> io:format("error in printCars, D = ~p~n",[Error])
+                 Error -> io:format("error in printCars, D = ~p~n",[Error]),
+                   io:format("error in printCars, ~p~n",[ets:lookup(cars,Key)]),
+                   ets:delete(cars,Key)
                end;
-    Error ->  io:format("error in printCar for reason ~p~n",[Error])
+    Error ->  io:format("error in printCar for reason ~p~n",[Error]),
+      io:format("error in printCars, ~p~n",[ets:lookup(cars,Key)]),
+      ets:delete(cars,Key)
   end,
 
   case ets:member(cars,Key) of
@@ -544,11 +555,11 @@ backup_pc(PCDown,NewPC) ->
   Fun = fun(E) -> put(E,NewPC) end,
   lists:foreach(Fun,L2), ok.
 
-
+%this function is the navigation system
 main_navigation(X,Y,PC1,PC2,PC3,PC4) ->
-  Result =  check_cars(ets:first(cars)),
+  Result =  check_cars(ets:first(cars)), % check if there is a car that already selected
   case Result of
-    null -> if
+    null -> if % in case there isn't a car that already selected,pick the close car
               X >= 721, Y =< 472 -> rpc:call(PC1,server,server_search_close_car,[X,Y]);
               X >= 721, Y >= 472 -> rpc:call(PC4,server,server_search_close_car,[X,Y]);
               X =< 721, Y =< 472 -> rpc:call(PC2,server,server_search_close_car,[X,Y]);
@@ -556,12 +567,14 @@ main_navigation(X,Y,PC1,PC2,PC3,PC4) ->
               true -> error
             end;
 
+    % in case there isn't a car that already selected, search a close junction
     Pid -> io:format("Pid was founded: ~p~n",[Pid]), Result2 = rpc:call(PC1,server,server_search_close_junc,[X,Y]),
 
 
+
       case Result2 of
-        null -> io:format("error in nev, cant find close junction");
-        Dest ->io:format("Dest was founded: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid),
+        null -> io:format("error in navigation, cant find close junction");
+        Dest ->io:format("Dest was founded: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid), % in case there is a close junction update the car destination
           rpc:call(PC,server,update_car_nev,[Pid,Dest])
 
       end
@@ -571,14 +584,60 @@ main_navigation(X,Y,PC1,PC2,PC3,PC4) ->
 
 
 
-
+%this function check if there is a car that already selected
 check_cars('$end_of_table') -> io:format("there is no car in process ~n"), null;
 check_cars(Key) ->  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
   case Nev of
     in_process -> Key;
     _-> check_cars(ets:next(cars,Key))
 
-   % null -> check_cars(ets:next(cars,Key));
-   % _-> Key
+    % null -> check_cars(ets:next(cars,Key));
+    % _-> Key
 
   end.
+
+main_cars_mon('$end_of_table',PC1,PC2,PC3,PC4) -> main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4);
+main_cars_mon(Key,PC1,PC2,PC3,PC4)->
+  [{_,_,_,_,_,_,PC,_}] = ets:lookup(cars,Key),
+  Res =  check_PC(Key,PC,PC1,PC2,PC3,PC4),
+  case Res of
+    {_,true} -> main_cars_mon(ets:next(cars,Key),PC1,PC2,PC3,PC4);
+    {PC,_}-> Next = ets:next(cars,Key),
+      timer:sleep(1000),
+      
+      case ets:member(cars,Key) of
+        true -> io:format("PPPPPPPPPPPPPPPPPPPPPPPPPP process ~p killed in his PC ~n",[Key]),
+                rpc:call(PC,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],pc_1]),
+          ets:delete(cars,Key),
+          main_cars_mon(Next,PC1,PC2,PC3,PC4);
+        _ -> main_cars_mon(Next,PC1,PC2,PC3,PC4)
+      end
+
+%       rpc:call(PC,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],pc_1]),
+%       Next = ets:next(cars,Key),
+%       ets:delete(cars,Key),
+%       main_cars_mon(Next,PC1,PC2,PC3,PC4)
+  end.
+
+check_PC(Key,PC_to_check,PC1,PC2,PC3,PC4) ->
+  Res = net_adm:ping(PC_to_check),
+  case Res of
+    pong -> case PC_to_check of
+              PC1 -> {PC1,rpc:call(PC1, erlang, is_process_alive, [Key])};
+              PC2 -> {PC2,rpc:call(PC2, erlang, is_process_alive, [Key])};
+              PC3 -> {PC3,rpc:call(PC3, erlang, is_process_alive, [Key])};
+              PC4 -> {PC4,rpc:call(PC4, erlang, is_process_alive, [Key])}
+
+
+            end;
+
+    _-> case PC_to_check of
+          PC1 -> check_PC(Key,PC2,PC1,PC2,PC3,PC4);
+          PC2 -> check_PC(Key,PC3,PC1,PC2,PC3,PC4);
+          PC3 -> check_PC(Key,PC4,PC1,PC2,PC3,PC4);
+          PC4 -> check_PC(Key,PC1,PC1,PC2,PC3,PC4)
+        end
+  end.
+
+
+
