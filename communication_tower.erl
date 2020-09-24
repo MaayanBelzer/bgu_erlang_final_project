@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author maayan
+%%% @author Maayan Belzer, Nir Tapiero
 %%% @copyright (C) 2020, <COMPANY>
 %%% @doc
 %%%
@@ -7,7 +7,7 @@
 %%% Created : 15. Aug 2020 8:42 AM
 %%%-------------------------------------------------------------------
 -module(communication_tower).
--author("maayan").
+-author("Maayan Belzer, Nir Tapiero").
 
 
 -behaviour(gen_server).
@@ -48,12 +48,12 @@ start(Name,{X,Y})->
 init([]) ->
   {ok, #communication_tower_state{}};
 
-init([{X,Y}]) ->
+init([{X,Y}]) -> % initialize comm and insert to ets
   ets:insert(comms,{{X,Y},[self()]}),
   {ok, #communication_tower_state{}}.
 
 %% Events
-receive_message(Who,Car,MSG) ->
+receive_message(Who,Car,MSG) -> % message was received
   gen_server:cast(Who,{Who,Car,MSG}).
 
 
@@ -81,19 +81,13 @@ handle_call(_Request, _From, State = #communication_tower_state{}) ->
   {stop, Reason :: term(), NewState :: #communication_tower_state{}}).
 
 
-handle_cast({Comm,Car,MSG},State)->
+handle_cast({Comm,Car,MSG},State)-> % checks what the message was and forward it to car or to server
   case MSG of
     {s_light,M} -> server:s_light(Comm,Car,M);
     {s_close_to_car,M} -> server:s_close_to_car(Comm,Car,M);
-    {s_fallen_car} -> server:s_fallen_car(Comm,Car);
-    {s_accident,M} -> server:s_accident(Comm,Car,M);
-    {s_out_of_range} -> server:s_out_of_range(Comm,Car);
-    {s_into_range} -> server:s_into_range(Comm,Car);
     {car_finish_bypass} -> server:car_finish_bypass(Comm,Car);
     {car_finish_turn} -> server:car_finish_turn(Comm,Car);
-    {deleteCar} -> server:deleteCar(Comm,Car);
-
-
+    {deleteCar} -> server:deleteCar(Car);
     {f_bypass}->cars:f_bypass(Car);
     {f_turn} -> cars:f_turn(Car);
     {turn,M} -> cars:turn(Car,M);
@@ -103,10 +97,6 @@ handle_cast({Comm,Car,MSG},State)->
   end,
   {noreply, State}.
 
-
-
-%handle_cast(_Request, State = #communication_tower_state{}) ->
-%  {noreply, State}.
 
 %% @private
 %% @doc Handling all non call/cast messages
