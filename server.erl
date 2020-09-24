@@ -24,8 +24,9 @@
 
 % gen_server events
 -export([s_close_to_car/3,s_light/3,start/0,start/5,
-  car_finish_bypass/2,car_finish_turn/2,deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/7,update_monitor/1,smoke/4,deletesmoke/1,print_light/2,
-  search_close_car/2,search_close_junc/2,update_car_nev/2,server_search_close_car/2,server_search_close_junc/2]).
+%  car_finish_bypass/2,car_finish_turn/2
+  deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/7,update_monitor/1,smoke/4,deletesmoke/1,print_light/2,
+  search_close_car/2,search_close_junc/2,update_car_nev/2,server_search_close_car/2,server_search_close_junc/2,light/4,ctc/3,checkBypass/3,checkBypass2/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -188,15 +189,15 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 %% Events
 s_light(Comm,Who,{R,J}) -> gen_server:cast(?MODULE,{light,Comm,Who,{R,J}}). % car is close to junction
 s_close_to_car(Comm,Who,OtherCar) -> gen_server:cast(?MODULE,{ctc,Comm,Who,OtherCar}). % car is close to another car
-car_finish_bypass(Comm,Who) -> case Comm of % car finished bypassing
-                                 null -> cars:f_bypass(Who);
-                                 _-> communication_tower:receive_message(Comm,Who,{f_bypass})
-                               end.
-car_finish_turn(Comm,Who) -> % car finished turning
-  case Comm of
-    null -> cars:f_turn(Who);
-    _-> communication_tower:receive_message(Comm,Who,{f_turn})
-  end.
+%car_finish_bypass(Comm,Who) -> case Comm of % car finished bypassing
+%                                null -> cars:f_bypass(Who);
+%                                 _-> communication_tower:receive_message(Comm,Who,{f_bypass})
+%                              end.
+%car_finish_turn(Comm,Who) -> % car finished turning
+%  case Comm of
+%    null -> cars:f_turn(Who);
+%    _-> communication_tower:receive_message(Comm,Who,{f_turn})
+%  end.
 deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}). % delete car from ets
 deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}). % kill pid
 update_car_location() -> gen_server:call(?MODULE,update_car). % main requests car ets
@@ -289,51 +290,57 @@ handle_cast({movedCar,Name,Type,Start,Location,Con,PC,Nev},State) -> % start a c
   {noreply, State};
 
 handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns left, right or straight
-  List =  digraph:out_neighbours(get(graph),J), % get all possible directions the car can continue towards using digraph
+
+  spawn(server,light,[get(graph),Comm,Who,J]),
+
+%  List =  digraph:out_neighbours(get(graph),J), % get all possible directions the car can continue towards using digraph
+%  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Who),% get the cars navigation status
+%  case Nev of
+%    null   -> E = lists:nth(rand:uniform(length(List)),List),% in case the navigation status is null or in_process, pick a random direction
+%      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
+%      case Comm of
+%        null -> cars:turn(Who, {Dir, Road});
+%        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+%      end;
+
+%    in_process -> E = lists:nth(rand:uniform(length(List)),List),
+%      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
+%      case Comm of
+%        null -> cars:turn(Who, {Dir, Road});
+%        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+%      end;
+
+%    Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
+%                Dest /= J -> Trail = digraph:get_short_path(get(graph),J,Dest),io:format(" Trail : ~p~n",[Trail]),
+%                  case Trail of
+%                    false -> io:format("The trail isn't exists, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
+%                      E = lists:nth(rand:uniform(length(List)),List),
+%                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
+%                      case Comm of
+%                        null -> cars:turn(Who, {Dir, Road});
+%                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+%                      end;
+%                    _->  Next = hd(tl(Trail)),% in case the trail is exists, get the next junction
+%                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),Next),
+%                      case Comm of
+%                        null -> cars:turn(Who, {Dir, Road});
+%                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+%                      end
+%                  end;
+%                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p is reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
+%                 E = lists:nth(rand:uniform(length(List)),List),
+%                 {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
+%                 case Comm of
+%                    null -> cars:turn(Who, {Dir, Road});
+%                   _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+%                  end
+%              end
+%  end,
 
 
-  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Who),% get the cars navigation status
-  case Nev of
-    null   -> E = lists:nth(rand:uniform(length(List)),List),% in case the navigation status is null or in_process, pick a random direction
-      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-      case Comm of
-        null -> cars:turn(Who, {Dir, Road});
-        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-      end;
 
-    in_process -> E = lists:nth(rand:uniform(length(List)),List),
-      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-      case Comm of
-        null -> cars:turn(Who, {Dir, Road});
-        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-      end;
 
-    Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
-                Dest /= J -> Trail = digraph:get_short_path(get(graph),J,Dest),io:format(" Trail : ~p~n",[Trail]),
-                  case Trail of
-                    false -> io:format("The trail isn't exists, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
-                      E = lists:nth(rand:uniform(length(List)),List),
-                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-                      case Comm of
-                        null -> cars:turn(Who, {Dir, Road});
-                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-                      end;
-                    _->  Next = hd(tl(Trail)),% in case the trail is exists, get the next junction
-                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),Next),
-                      case Comm of
-                        null -> cars:turn(Who, {Dir, Road});
-                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-                      end
-                  end;
-                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p is reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
-                  E = lists:nth(rand:uniform(length(List)),List),
-                  {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-                  case Comm of
-                    null -> cars:turn(Who, {Dir, Road});
-                    _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-                  end
-              end
-  end,
+
 
 %  E = lists:nth(rand:uniform(length(List)),List),
 %  {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
@@ -347,20 +354,22 @@ handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns lef
 
 
 handle_cast({ctc,Comm,Who,OtherCar}, State) -> % decide whether the car bypasses the other car or stops
-  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
-  Bool2 = checkBypass2(Who,ets:first(junction)),
-  case {Bool1,Bool2} of
-    {true,true} -> % if it can, bypass
-      case Comm of
-        null -> cars:bypass(Who);
-        _-> communication_tower:receive_message(Comm,Who,{bypass})
-      end;
 
-    _ ->     case Comm of % if it can't, stop
-               null -> cars:stop(Who,OtherCar);
-               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
-             end
-  end,
+  spawn(server,ctc,[Comm,Who,OtherCar]),
+%  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
+%  Bool2 = checkBypass2(Who,ets:first(junction)),
+% case {Bool1,Bool2} of
+%   {true,true} -> % if it can, bypass
+%      case Comm of
+%        null -> cars:bypass(Who);
+%        _-> communication_tower:receive_message(Comm,Who,{bypass})
+%      end;
+
+%    _ ->     case Comm of % if it can't, stop
+%               null -> cars:stop(Who,OtherCar);
+%               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
+%             end
+%  end,
 
   {noreply, State};
 
@@ -639,6 +648,64 @@ search_close_junc(Key,{X,Y}) -> [{{_,J},[{XP,YP},_]}] =  ets:lookup(junction,Key
     true -> search_close_junc(ets:next(junction,Key),{X,Y})
   end.
 
+% this function decides in which direction the car will continue and sends the response to the car
+light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all possible directions the car can continue towards using digraph
+  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Who),% get the cars navigation status
+  case Nev of
+    null   -> E = lists:nth(rand:uniform(length(List)),List),% in case the navigation status is null or in_process, pick a random direction
+      {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
+      case Comm of
+        null -> cars:turn(Who, {Dir, Road});
+        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+      end;
 
+    in_process -> E = lists:nth(rand:uniform(length(List)),List),
+      {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
+      case Comm of
+        null -> cars:turn(Who, {Dir, Road});
+        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+      end;
 
+    Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
+                Dest /= J -> Trail = digraph:get_short_path(Graph,J,Dest),io:format(" Trail : ~p~n",[Trail]),
+                  case Trail of
+                    false -> io:format("The trail isn't exists, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
+                      E = lists:nth(rand:uniform(length(List)),List),
+                      {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
+                      case Comm of
+                        null -> cars:turn(Who, {Dir, Road});
+                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+                      end;
+                    _->  Next = hd(tl(Trail)),% in case the trail is exists, get the next junction
+                      {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),Next),
+                      case Comm of
+                        null -> cars:turn(Who, {Dir, Road});
+                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+                      end
+                  end;
+                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p is reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
+                  E = lists:nth(rand:uniform(length(List)),List),
+                  {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
+                  case Comm of
+                    null -> cars:turn(Who, {Dir, Road});
+                    _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
+                  end
+              end
+  end.
 
+% this function checks if the car can bypass and sends a response to the car accordingly
+ctc(Comm,Who,OtherCar) ->
+  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
+  Bool2 = checkBypass2(Who,ets:first(junction)),
+  case {Bool1,Bool2} of
+    {true,true} -> % if it can, bypass
+      case Comm of
+        null -> cars:bypass(Who);
+        _-> communication_tower:receive_message(Comm,Who,{bypass})
+      end;
+
+    _ ->     case Comm of % if it can't, stop
+               null -> cars:stop(Who,OtherCar);
+               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
+             end
+  end.

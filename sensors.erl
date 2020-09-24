@@ -278,7 +278,7 @@ car_accident(Pid,Key) ->
 
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % calculate distance between cars
   if
-    D =< 25, Pid /= P2 -> % if cars are too close, send accident event to cars
+    D =< 24, Pid /= P2 -> % if cars are too close, send accident event to cars
       cars:accident(Pid,P2),server:smoke(Pid,{X,Y},Key,{X2,Y2});
     true ->  case ets:member(cars,P2) of % if cars are not close, check next car
                true ->  car_accident(Pid,ets:next(cars,P2));

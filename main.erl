@@ -75,16 +75,16 @@ init([]) ->
   rpc:call(?PC4,server,start,[?PC1,?PC2,?PC3,?PC4,?Home]),
 
   % start all cars
-  rpc:call(?PC1,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],?PC1]),
-  rpc:call(?PC1,server,start_car,[a,5,[{874,0},down,r18,grey,st],?PC1]),
-  rpc:call(?PC2,server,start_car,[e,5,[{101,0},down,r2,yellow,st],?PC2]),
-  rpc:call(?PC2,server,start_car,[g,5,[{0,417},right,r3,red,st],?PC2]),
-  rpc:call(?PC3,server,start_car,[b,10,[{0,651},right,r9,grey,st],?PC3]),
-  rpc:call(?PC3,server,start_car,[c,5,[{405,890},up,r14,grey,st],?PC3]),
-  rpc:call(?PC3,server,start_car,[d,10,[{623,890},up,r4,red,st],?PC3]),
-  rpc:call(?PC1,server,start_car,[h,10,[{1117,890},up,r6,red,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,yellow,st],?PC1]),
+  rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,grey,st],?PC1]),
+  rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,yellow,st],?PC2]),
+  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st],?PC2]),
+  rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st],?PC3]),
+  rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st],?PC3]),
+  rpc:call(?PC1,server,start_car,[h,20,[{1117,890},up,r6,red,st],?PC1]),
 
-
+% spawn the car monitor
   spawn(main,main_cars_mon,[ets:first(cars),?PC1,?PC2,?PC3,?PC4]),
 
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
@@ -412,7 +412,7 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(Car2c),
 
   Car3 = wxImage:new("car3.png"),
-  Car3c = wxImage:scale(Car3,43,25),
+  Car3c = wxImage:scale(Car3,45,25),
   BmpCar3 = wxBitmap:new(Car3c),
   wxImage:destroy(Car3),
   wxImage:destroy(Car3c),
@@ -596,21 +596,22 @@ check_cars(Key) ->  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
 
   end.
 
+% this function goes over the car ets and checks whether the car processes are still alive
 main_cars_mon('$end_of_table',PC1,PC2,PC3,PC4) -> main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4);
 main_cars_mon(Key,PC1,PC2,PC3,PC4)->
-  [{_,_,_,_,_,_,PC,_}] = ets:lookup(cars,Key),
-  Res =  check_PC(Key,PC,PC1,PC2,PC3,PC4),
+  [{_,_,_,_,_,_,PC,_}] = ets:lookup(cars,Key), % check which PC the car is on
+  Res =  check_PC(Key,PC,PC1,PC2,PC3,PC4),  % returns whether the car is alive or not
   case Res of
-    {_,true} -> main_cars_mon(ets:next(cars,Key),PC1,PC2,PC3,PC4);
-    {PC,_}-> Next = ets:next(cars,Key),
+    {_,true} -> main_cars_mon(ets:next(cars,Key),PC1,PC2,PC3,PC4); % if it is, check the next car on ets
+    {PC,_}-> Next = ets:next(cars,Key), % if the car is not alive, check if it is still in the ets
       timer:sleep(1000),
       
       case ets:member(cars,Key) of
-        true -> io:format("PPPPPPPPPPPPPPPPPPPPPPPPPP process ~p killed in his PC ~n",[Key]),
+        true -> io:format("PPPPPPPPPPPPPPPPPPPPPPPPPP process ~p killed in his PC ~n",[Key]), % if car is in ets then start a new car and delete the old one
                 rpc:call(PC,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],pc_1]),
           ets:delete(cars,Key),
           main_cars_mon(Next,PC1,PC2,PC3,PC4);
-        _ -> main_cars_mon(Next,PC1,PC2,PC3,PC4)
+        _ -> main_cars_mon(Next,PC1,PC2,PC3,PC4) % if car is not in the ets, check next car
       end
 
 %       rpc:call(PC,server,start_car,[f,10,[{1344,93},left,r1,yellow,st],pc_1]),
@@ -619,10 +620,11 @@ main_cars_mon(Key,PC1,PC2,PC3,PC4)->
 %       main_cars_mon(Next,PC1,PC2,PC3,PC4)
   end.
 
+% this function checks if a car is alive on its PC
 check_PC(Key,PC_to_check,PC1,PC2,PC3,PC4) ->
-  Res = net_adm:ping(PC_to_check),
+  Res = net_adm:ping(PC_to_check), % check if the PC the car is on is alive
   case Res of
-    pong -> case PC_to_check of
+    pong -> case PC_to_check of % if it is, call to check if the car process is alive
               PC1 -> {PC1,rpc:call(PC1, erlang, is_process_alive, [Key])};
               PC2 -> {PC2,rpc:call(PC2, erlang, is_process_alive, [Key])};
               PC3 -> {PC3,rpc:call(PC3, erlang, is_process_alive, [Key])};
@@ -631,7 +633,7 @@ check_PC(Key,PC_to_check,PC1,PC2,PC3,PC4) ->
 
             end;
 
-    _-> case PC_to_check of
+    _-> case PC_to_check of % if the PC is not alive, check the backup PC
           PC1 -> check_PC(Key,PC2,PC1,PC2,PC3,PC4);
           PC2 -> check_PC(Key,PC3,PC1,PC2,PC3,PC4);
           PC3 -> check_PC(Key,PC4,PC1,PC2,PC3,PC4);
