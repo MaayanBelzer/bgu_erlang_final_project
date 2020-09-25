@@ -410,7 +410,13 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                    SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor(PC1,PC2,PC3,PC4);
                                  {badarg, [_, {_,car_accident,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
                                    SensorPid = spawn(sensors,car_accident,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor(PC1,PC2,PC3,PC4);
+                                 {{badmatch,_},[{_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if a sensor died, spawn a new one
+                                   SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor(PC1,PC2,PC3,PC4);
+                                 {{badmatch,_},[{_,car_accident,_,_}]} ->[{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
+                                   SensorPid = spawn(sensors,car_accident,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor(PC1,PC2,PC3,PC4);
+
                                  killed -> car_monitor(PC1,PC2,PC3,PC4);
+                                 normal -> car_monitor(PC1,PC2,PC3,PC4);
                                  Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),
                                    car_monitor(PC1,PC2,PC3,PC4)
                                end

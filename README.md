@@ -1,5 +1,5 @@
 # Car Network Routing System
- Concurrent and Distributed 2048 Simulation Systems implemented in Erlang OTP 
+ Concurrent and Distributed Systems implemented in Erlang OTP 
 </br> </br>
 ## Background
 In this project we implemented a car network routing system based on a given road map. The map includes one way streets with two lanes over which cars move and respond to the environment according to external events. 
