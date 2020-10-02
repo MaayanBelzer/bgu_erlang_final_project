@@ -601,7 +601,7 @@ update_ets(PC,Home) ->
     Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
       Res = net_adm:ping(PC),
       case Res of
-        pong -> rpc:call(PC, erlang, disconnect_node, [Home]); 
+        pong -> rpc:call(PC, erlang, disconnect_node, [Home]);
 %          main:server_down(PC);
         _-> ok
       end,
@@ -628,7 +628,7 @@ move_car(PcDown,Key) ->
 
   case PcDown of
     ?PC1 -> if
-              PC == ?PC1  -> rpc:call(?PC2,server,moved_car,[Name,Type,Start,Location,Con,?PC2,Nev]), % call to function in server
+              PC == ?PC1  -> rpc:call(get(?PC2),server,moved_car,[Name,Type,Start,Location,Con,get(?PC2),Nev]), % call to function in server
                 Next = ets:next(cars,Key), % get next car
                 ets:delete(cars,Key), % delete car from ets
                 move_car(PcDown,Next) ; % move next car
@@ -637,7 +637,7 @@ move_car(PcDown,Key) ->
 
     ?PC2 -> if
 
-              PC == ?PC2 -> rpc:call(?PC3,server,moved_car,[Name,Type,Start,Location,Con,?PC3,Nev]),
+              PC == ?PC2 -> rpc:call(get(?PC3),server,moved_car,[Name,Type,Start,Location,Con,get(?PC3),Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next);
@@ -646,7 +646,7 @@ move_car(PcDown,Key) ->
 
     ?PC3 -> if
 
-              PC == ?PC3 -> rpc:call(?PC4,server,moved_car,[Name,Type,Start,Location,Con,?PC4,Nev]),
+              PC == ?PC3 -> rpc:call(get(?PC4),server,moved_car,[Name,Type,Start,Location,Con,get(?PC4),Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
@@ -655,7 +655,7 @@ move_car(PcDown,Key) ->
 
     ?PC4 -> if
 
-              PC == ?PC4 -> rpc:call(?PC1,server,moved_car,[Name,Type,Start,Location,Con,?PC1,Nev]),
+              PC == ?PC4 -> rpc:call(get(?PC1),server,moved_car,[Name,Type,Start,Location,Con,get(?PC1),Nev]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
