@@ -151,9 +151,7 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 %  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
   traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
-
   traffic_light:start(r18b,{{r18,b},[{902,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
 
   FirstKey = ets:first(junction),
@@ -275,7 +273,7 @@ handle_cast({nodedown,PC},State) -> % send message to car monitor about a nodedo
 
 handle_cast({del,Pid},State) -> % call main to delete car from ets and delete from local ets
   timer:sleep(320),
- % io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
+  % io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   rpc:call(get(home),main,delete_car,[Pid]),
   ets:delete(cars,Pid),
   {noreply, State};
@@ -355,26 +353,42 @@ handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns lef
 
 handle_cast({ctc,Comm,Who,OtherCar}, State) -> % decide whether the car bypasses the other car or stops
 
-  spawn(server,ctc,[Comm,Who,OtherCar]),
-%  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
-%  Bool2 = checkBypass2(Who,ets:first(junction)),
-% case {Bool1,Bool2} of
-%   {true,true} -> % if it can, bypass
-%      case Comm of
-%        null -> cars:bypass(Who);
-%        _-> communication_tower:receive_message(Comm,Who,{bypass})
-%      end;
+%  spawn(server,ctc,[Comm,Who,OtherCar]),
+  Ans = ets:member(cars,Who),
+  Ans2 =ets:member(cars,OtherCar),
+  if
+     Ans == true, Ans2 == true ->
+  
+  [{_,_,_,_,_,_,_,Nev}] = ets:lookup(cars,Who),
+  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
+  Bool2 = checkBypass2(Who,ets:first(junction)),
 
-%    _ ->     case Comm of % if it can't, stop
-%               null -> cars:stop(Who,OtherCar);
-%               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
-%             end
-%  end,
+  if
+    Nev == null; Nev == in_process  -> Bool3 = true ;
+    true -> Bool3 = false
+  end,
+  case {Bool1,Bool2,Bool3} of
+    {true,true,true} -> % if it can, bypass
+      case Comm of
+        null -> cars:bypass(Who);
+        _-> communication_tower:receive_message(Comm,Who,{bypass})
+      end;
 
+    _ ->     case Comm of % if it can't, stop
+               null -> cars:stop(Who,OtherCar);
+               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
+             end
+  end,
   {noreply, State};
+    true -> {noreply, State}
+  end;
 
 handle_cast({start_car,Name,Type,Start,PC},State) -> % starts car in local PC
   cars:start(Name,get(car_monitor),Type,Start,PC),
+  {noreply, State};
+
+handle_cast(Else,State) -> % starts car in local PC
+ io:format("error in server: ~p~n",[Else]),
   {noreply, State}.
 
 
@@ -617,25 +631,32 @@ keys(TableName, CurrentKey, Acc) ->
   keys(TableName, NextKey, [NextKey|Acc]).
 
 % this function search a close traffic light, in case there is a close traffic light the function print the traffic light color
-printTrafficLight('$end_of_table',_,_) -> ok;
+printTrafficLight('$end_of_table',_,_) ->io:format("there is no close traffic light ~n"),
+  % io:format("the number of the traffic light is: ~p~n",[length(keys(junction,ets:first(junction),[]))]),
+  ok;
 printTrafficLight(Key,X,Y) ->
   [{_,[{XP,YP},LightPid]}] =  ets:lookup(junction,Key),
   case LightPid of
     nal-> printTrafficLight(ets:next(junction,Key),X,Y);
-    _-> D = math:sqrt(math:pow(X-(XP + 15),2) + math:pow(Y-(YP + 17),2)),
+    _-> %D = math:sqrt(math:pow(X-(XP + 15),2) + math:pow(Y-(YP + 17),2)),
+      D = math:sqrt(math:pow(X-XP ,2) + math:pow(Y-YP ,2)),
       if
-        D =< 20 -> {C,_} =sys:get_state(LightPid),
+        D =< 80 -> {C,_} =sys:get_state(LightPid),
           io:format("the color of the traffic light is: ~p~n",[C]);
+%          io:format("the traffic light loction: ~p~n",[{XP,YP}]);
         true -> printTrafficLight(ets:next(junction,Key),X,Y)
       end
   end.
 
 % this function search a close car, in case there is a close car the function update his ETS
-search_close_car('$end_of_table',_)  -> io:format("error in nev, cant find close car");
+search_close_car('$end_of_table',_)  -> io:format("error in nev, cant find close car~n");
 search_close_car(Key,{X,Y}) ->  [{Pid,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Key),
   D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
-    D =< 100 ->io:format("find a close car: ~p~n",[Key]),ets:update_element(cars,Pid,[{8,in_process}]);
+    D =< 100 ->io:format("find a close car: ~p~n",[Key]),
+      io:format("car state: ~p~n",[sys:get_state(Key)]),
+      io:format("car ETS: ~p~n",[ets:lookup(cars,Key)]),
+      ets:update_element(cars,Pid,[{8,in_process}]);
     true -> search_close_car(ets:next(cars,Key),{X,Y})
   end.
 
