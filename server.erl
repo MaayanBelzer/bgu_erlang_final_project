@@ -24,9 +24,9 @@
 
 % gen_server events
 -export([s_close_to_car/3,s_light/3,start/0,start/5,
-%  car_finish_bypass/2,car_finish_turn/2
   deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/7,update_monitor/1,smoke/4,deletesmoke/1,print_light/2,
-  search_close_car/2,search_close_junc/2,update_car_nev/2,server_search_close_car/2,server_search_close_junc/2,light/4,ctc/3,checkBypass/3,checkBypass2/2]).
+  search_close_car/2,search_close_junc/2,update_car_nev/2,server_search_close_car/2,server_search_close_junc/2,light/4,checkBypass/3,checkBypass2/2,
+  error_in_turn/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -81,78 +81,42 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 
   ets:new(junction,[set,public,named_table]), % initialize ets for junctions and add all traffic lights
 
-  traffic_light:start(r1a,{{r1,a},[{1137,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r1a,{{r1,a},[{1137,120},{1130, 35}]}),
-  traffic_light:start(r1b,{{r1,b},[{938,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r1b,{{r1,b},[{938,120},{847, 35}]}),
-  ets:insert(junction,{{r1,t},[{799,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r1,t},[{799,120},nal,{nal,nal}]}),
-  traffic_light:start(r1c,{{r1,c},[{638,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r1c,{{r1,c},[{638,120},{634, 35}]}),
-  ets:insert(junction,{{r1,s},[{420,120},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r1,s},[{420,120},nal,{nal,nal}]}),
-  traffic_light:start(r1d,{{r1,d},[{302,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r1d,{{r1,d},[{302,120},{280, 35}]}),
-  traffic_light:start(r1e,{{r1,e},[{164,120}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r1e,{{r1,e},[{164,120},{138, 35}]}),
-  traffic_light:start(r2e,{{r2,e},[{128,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r2e,{{r2,e},[{128,75},{75, 35}]}),
-  traffic_light:start(r2f,{{r2,f},[{128,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r2f,{{r2,f},[{128,355},{75, 330}]}),
-  traffic_light:start(r2o,{{r2,o},[{128,590}]}),%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r2o,{{r2,o},[{128,590},{75, 575}]}),
-  traffic_light:start(r3f,{{r3,f},[{81,418}]}),%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r3f,{{r3,f},[{81,418},{75, 426}]}),
-  ets:insert(junction,{{r3,r},[{204,418},nal]}),%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r3,r},[{204,418},nal,{nal,nal}]}),
-  traffic_light:start(r3g,{{r3,g},[{372,418}]}),%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r3g,{{r3,g},[{372,418},{355, 426}]}),
-  traffic_light:start(r3h,{{r3,h},[{560,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r3h,{{r3,h},[{560,418},{571, 426}]}),
-  traffic_light:start(r3i,{{r3,i},[{728,418}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r3i,{{r3,i},[{728,418},{713, 420}]}),
-  ets:insert(junction,{{r3,u},[{860,418},nal]}),%%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r3,u},[{860,418},nal,{nal,nal}]}),
-  traffic_light:start(r3j,{{r3,j},[{1055,418}]}),%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r3j,{{r3,j},[{1055,418},{1067, 426}]}),
-  traffic_light:start(r4l,{{r4,l},[{625,820}]}),%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r4l,{{r4,l},[{625,820},{634, 790}]}),
-  traffic_light:start(r4m,{{r4,m},[{625,689}]}),%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r4m,{{r4,m},[{625,689},{418, 660}]}),
-  traffic_light:start(r4h,{{r4,h},[{590,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r4h,{{r4,h},[{590,433},{634, 426}]}),
-  traffic_light:start(r4c,{{r4,c},[{625,154}]}),%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r4c,{{r4,c},[{625,154},{634, 135}]}),
-  traffic_light:start(r5k,{{r5,k},[{1058,640}]}),%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r5k,{{r5,k},[{1058,640},{1067, 660}]}),
-  traffic_light:start(r6k,{{r6,k},[{1122,671}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r6k,{{r6,k},[{1122,671},{1130, 660}]}),
-  traffic_light:start(r6j,{{r6,j},[{1122,434}]}),%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r6j,{{r6,j},[{1122,434},{1130, 426}]}),
-  traffic_light:start(r6a,{{r6,a},[{1122,154}]}),%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r6a,{{r6,a},[{1122,154},{1130, 135}]}),
-  traffic_light:start(r7l,{{r7,l},[{640,787}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r7l,{{r7,l},[{640,787},{634, 710}]}),
-  traffic_light:start(r8d,{{r8,d},[{266,154}]}),%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r8d,{{r8,d},[{266,154},{280, 135}]}),
-  traffic_light:start(r9o,{{r9,o},[{80,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% traffic_light:start(r9o,{{r9,o},[{80,655},{75, 660}]}),
-  traffic_light:start(r9n,{{r9,n},[{342,655}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%  traffic_light:start(r9n,{{r9,n},[{342,655},{571, 660}]}),
-  traffic_light:start(r9m,{{r9,m},[{560,655}]}),%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r9m,{{r9,m},[{560,655},{355, 660}]}),
-  traffic_light:start(r10i,{{r10,i},[{763,355}]}),%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r10i,{{r10,i},[{763,355},{713, 330}]}),
-  ets:insert(junction,{{r12,p},[{902,590},nal]}),%%%%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r12,p},[{902,590},nal,{nal,nal}]}),
-  ets:insert(junction,{{r12,q},[{902,745},nal]}),%%%%%%%%%%%%%%%%%%%%%
-%  ets:insert(junction,{{r12,q},[{902,745},nal,{nal,nal}]}),
-  traffic_light:start(r14n,{{r14,n},[{407,670}]}),%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r14n,{{r14,n},[{407,670},{634, 660}]}),
-  traffic_light:start(r14g,{{r14,g},[{407,433}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r14g,{{r14,g},[{407,433},{418, 426}]}),
-  traffic_light:start(r18b,{{r18,b},[{902,75}]}),%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  traffic_light:start(r18b,{{r18,b},[{902,66},{847, 35}]}),
+  traffic_light:start(r1a,{{r1,a},[{1137,120}]}),
+  traffic_light:start(r1b,{{r1,b},[{938,120}]}),
+  ets:insert(junction,{{r1,t},[{799,120},nal]}),
+  traffic_light:start(r1c,{{r1,c},[{638,120}]}),
+  ets:insert(junction,{{r1,s},[{420,120},nal]}),
+  traffic_light:start(r1d,{{r1,d},[{302,120}]}),
+  traffic_light:start(r1e,{{r1,e},[{164,120}]}),
+  traffic_light:start(r2e,{{r2,e},[{128,75}]}),
+  traffic_light:start(r2f,{{r2,f},[{128,355}]}),
+  traffic_light:start(r2o,{{r2,o},[{128,590}]}),
+  traffic_light:start(r3f,{{r3,f},[{81,418}]}),
+  ets:insert(junction,{{r3,r},[{204,418},nal]}),
+  traffic_light:start(r3g,{{r3,g},[{372,418}]}),
+  traffic_light:start(r3h,{{r3,h},[{560,418}]}),
+  traffic_light:start(r3i,{{r3,i},[{728,418}]}),
+  ets:insert(junction,{{r3,u},[{860,418},nal]}),
+  traffic_light:start(r3j,{{r3,j},[{1055,418}]}),
+  traffic_light:start(r4l,{{r4,l},[{625,820}]}),
+  traffic_light:start(r4m,{{r4,m},[{625,689}]}),
+  traffic_light:start(r4h,{{r4,h},[{590,433}]}),
+  traffic_light:start(r4c,{{r4,c},[{625,154}]}),
+  traffic_light:start(r5k,{{r5,k},[{1058,640}]}),
+  traffic_light:start(r6k,{{r6,k},[{1122,671}]}),
+  traffic_light:start(r6j,{{r6,j},[{1122,434}]}),
+  traffic_light:start(r6a,{{r6,a},[{1122,154}]}),
+  traffic_light:start(r7l,{{r7,l},[{640,787}]}),
+  traffic_light:start(r8d,{{r8,d},[{266,154}]}),
+  traffic_light:start(r9o,{{r9,o},[{80,655}]}),
+  traffic_light:start(r9n,{{r9,n},[{342,655}]}),
+  traffic_light:start(r9m,{{r9,m},[{560,655}]}),
+  traffic_light:start(r10i,{{r10,i},[{763,355}]}),
+  ets:insert(junction,{{r12,p},[{902,590},nal]}),
+  ets:insert(junction,{{r12,q},[{902,745},nal]}),
+  traffic_light:start(r14n,{{r14,n},[{407,670}]}),
+  traffic_light:start(r14g,{{r14,g},[{407,433}]}),
+  traffic_light:start(r18b,{{r18,b},[{902,75}]}),
 
   FirstKey = ets:first(junction),
   KeyList = keys(junction, FirstKey, [FirstKey]),
@@ -187,15 +151,6 @@ init([PC1,PC2,PC3,PC4,Home]) ->
 %% Events
 s_light(Comm,Who,{R,J}) -> gen_server:cast(?MODULE,{light,Comm,Who,{R,J}}). % car is close to junction
 s_close_to_car(Comm,Who,OtherCar) -> gen_server:cast(?MODULE,{ctc,Comm,Who,OtherCar}). % car is close to another car
-%car_finish_bypass(Comm,Who) -> case Comm of % car finished bypassing
-%                                null -> cars:f_bypass(Who);
-%                                 _-> communication_tower:receive_message(Comm,Who,{f_bypass})
-%                              end.
-%car_finish_turn(Comm,Who) -> % car finished turning
-%  case Comm of
-%    null -> cars:f_turn(Who);
-%    _-> communication_tower:receive_message(Comm,Who,{f_turn})
-%  end.
 deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}). % delete car from ets
 deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}). % kill pid
 update_car_location() -> gen_server:call(?MODULE,update_car). % main requests car ets
@@ -208,6 +163,7 @@ print_light(X,Y) -> printTrafficLight(ets:first(junction),X,Y).
 update_car_nev(Pid,Dest) -> ets:update_element(cars,Pid,[{8,Dest}]).
 server_search_close_car(X,Y) -> gen_server:cast(?MODULE,{server_search_close_car,X,Y}).
 server_search_close_junc(X,Y) -> gen_server:call(?MODULE,{server_search_close_junc,X,Y}).
+error_in_turn(Pid) -> gen_server:call(?MODULE,{error_in_turn,Pid}).
 
 
 
@@ -235,6 +191,10 @@ handle_call({server_search_close_junc,X,Y},_,State) ->
   Res = search_close_junc(ets:first(junction),{X,Y}),
   {reply, Res, State};
 
+handle_call({error_in_turn,Pid},_,State) ->
+%  Res = checkBypass2(Pid,ets:first(junction)),
+  Res = checkTurn(Pid,ets:first(junction)),
+  {reply, Res, State};
 
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
@@ -252,9 +212,7 @@ handle_call(_Request, _From, State) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 
 handle_cast({server_search_close_car,X,Y},State) ->
-  io:format("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK~n"),
   search_close_car(ets:first(cars),{X,Y}),
-
   {noreply, State};
 
 handle_cast({smoke,Car1,L1,Car2,L2},State) -> % send message to car monitor about a nodedown
@@ -273,14 +231,12 @@ handle_cast({nodedown,PC},State) -> % send message to car monitor about a nodedo
 
 handle_cast({del,Pid},State) -> % call main to delete car from ets and delete from local ets
   timer:sleep(320),
-  % io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   rpc:call(get(home),main,delete_car,[Pid]),
   ets:delete(cars,Pid),
   {noreply, State};
 
 handle_cast({delP,Pid},State) -> % kill process with pid PID
   exit(Pid,kill),
-%  io:format("~p is alive? ~p~n",[Pid,is_process_alive(Pid)]) ,
   {noreply, State};
 
 handle_cast({movedCar,Name,Type,Start,Location,Con,PC,Nev},State) -> % start a car in local PC when it moved into range
@@ -288,98 +244,38 @@ handle_cast({movedCar,Name,Type,Start,Location,Con,PC,Nev},State) -> % start a c
   {noreply, State};
 
 handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns left, right or straight
-
   spawn(server,light,[get(graph),Comm,Who,J]),
-
-%  List =  digraph:out_neighbours(get(graph),J), % get all possible directions the car can continue towards using digraph
-%  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Who),% get the cars navigation status
-%  case Nev of
-%    null   -> E = lists:nth(rand:uniform(length(List)),List),% in case the navigation status is null or in_process, pick a random direction
-%      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-%      case Comm of
-%        null -> cars:turn(Who, {Dir, Road});
-%        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-%      end;
-
-%    in_process -> E = lists:nth(rand:uniform(length(List)),List),
-%      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-%      case Comm of
-%        null -> cars:turn(Who, {Dir, Road});
-%        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-%      end;
-
-%    Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
-%                Dest /= J -> Trail = digraph:get_short_path(get(graph),J,Dest),io:format(" Trail : ~p~n",[Trail]),
-%                  case Trail of
-%                    false -> io:format("The trail isn't exists, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
-%                      E = lists:nth(rand:uniform(length(List)),List),
-%                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-%                      case Comm of
-%                        null -> cars:turn(Who, {Dir, Road});
-%                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-%                      end;
-%                    _->  Next = hd(tl(Trail)),% in case the trail is exists, get the next junction
-%                      {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),Next),
-%                      case Comm of
-%                        null -> cars:turn(Who, {Dir, Road});
-%                        _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-%                      end
-%                  end;
-%                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p is reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
-%                 E = lists:nth(rand:uniform(length(List)),List),
-%                 {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-%                 case Comm of
-%                    null -> cars:turn(Who, {Dir, Road});
-%                   _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-%                  end
-%              end
-%  end,
-
-
-
-
-
-
-%  E = lists:nth(rand:uniform(length(List)),List),
-%  {Dir, Road} = getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E),
-
-
-  % case Comm of
-  %   null -> cars:turn(Who, {Dir, Road});
-  %   _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
-  % end,
   {noreply, State};
 
 
 handle_cast({ctc,Comm,Who,OtherCar}, State) -> % decide whether the car bypasses the other car or stops
 
-%  spawn(server,ctc,[Comm,Who,OtherCar]),
   Ans = ets:member(cars,Who),
   Ans2 =ets:member(cars,OtherCar),
   if
-     Ans == true, Ans2 == true ->
-  
-  [{_,_,_,_,_,_,_,Nev}] = ets:lookup(cars,Who),
-  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
-  Bool2 = checkBypass2(Who,ets:first(junction)),
+    Ans == true, Ans2 == true ->
 
-  if
-    Nev == null; Nev == in_process  -> Bool3 = true ;
-    true -> Bool3 = false
-  end,
-  case {Bool1,Bool2,Bool3} of
-    {true,true,true} -> % if it can, bypass
-      case Comm of
-        null -> cars:bypass(Who);
-        _-> communication_tower:receive_message(Comm,Who,{bypass})
-      end;
+      [{_,_,_,_,_,_,_,Nev}] = ets:lookup(cars,Who),
+      Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
+      Bool2 = checkBypass2(Who,ets:first(junction)),
 
-    _ ->     case Comm of % if it can't, stop
-               null -> cars:stop(Who,OtherCar);
-               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
-             end
-  end,
-  {noreply, State};
+      if
+        Nev == null; Nev == in_process  -> Bool3 = true ;
+        true -> Bool3 = false
+      end,
+      case {Bool1,Bool2,Bool3} of
+        {true,true,true} -> % if it can, bypass
+          case Comm of
+            null -> cars:bypass(Who);
+            _-> communication_tower:receive_message(Comm,Who,{bypass})
+          end;
+
+        _ ->     case Comm of % if it can't, stop
+                   null -> cars:stop(Who,OtherCar);
+                   _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
+                 end
+      end,
+      {noreply, State};
     true -> {noreply, State}
   end;
 
@@ -388,7 +284,7 @@ handle_cast({start_car,Name,Type,Start,PC},State) -> % starts car in local PC
   {noreply, State};
 
 handle_cast(Else,State) -> % starts car in local PC
- io:format("error in server: ~p~n",[Else]),
+  io:format("error in server: ~p~n",[Else]),
   {noreply, State}.
 
 
@@ -535,6 +431,70 @@ checkBypass2(Who,Key) ->
          end
   end.
 
+checkTurn(_,'$end_of_table') -> true;
+checkTurn(Who,Key) ->
+  [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_,_}] =  ets:lookup(cars,Who),
+  [{{R2,J},[{X2,Y2},_]}] = ets:lookup(junction,Key),
+  case R == R2 of
+    false -> checkTurn(Who,ets:next(junction,Key));
+    _ -> case Dir1 of % checks distance from junctions on the same road
+           left -> D = X-X2, if
+
+                               D >= 400  -> checkTurn(Who,ets:next(junction,Key)); % if it's far, check the next junction
+                               D =< 0 -> checkTurn(Who,ets:next(junction,Key));
+                               true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
+                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                 case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                   [] -> false;
+                                   _ -> checkTurn(Who,ets:next(junction,Key))
+                                 end
+                             end;
+
+           right ->  D = X2-X, if
+
+                                 D >= 400  -> checkTurn(Who,ets:next(junction,Key)); % if it's far, check the next junction
+                                 D =< 0 -> checkTurn(Who,ets:next(junction,Key));
+                                 true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
+                                   L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                   L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                   case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                     [] -> false;
+                                     _ -> checkTurn(Who,ets:next(junction,Key))
+                                   end
+                               end;
+           up ->  D = Y-Y2, if
+
+                              D >= 400  -> checkTurn(Who,ets:next(junction,Key)); % if it's far, check the next junction
+                              D =< 0 -> checkTurn(Who,ets:next(junction,Key));
+                              true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
+                                L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                  [] -> false;
+                                  _ -> checkTurn(Who,ets:next(junction,Key))
+                                end
+                            end;
+           down -> D = Y2-Y, if
+
+                               D >= 400  -> checkTurn(Who,ets:next(junction,Key)); % if it's far, check the next junction
+                               D =< 0 -> checkTurn(Who,ets:next(junction,Key));
+                               true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
+                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
+                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
+                                 case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                   [] -> false;
+                                   _ -> checkTurn(Who,ets:next(junction,Key))
+                                 end
+                             end
+
+         end
+  end.
+
+
+
+
+
 % this function creates a graph with junctions as nodes and roads as edges
 roadGraph()->
   G =  digraph:new(),
@@ -593,7 +553,7 @@ roadGraph()->
   digraph:add_edge(G,r,d,{up,r8}),
   digraph:add_edge(G,g,h,{right,r3}),
   digraph:add_edge(G,h,i,{right,r3}),
-  digraph:add_edge(G,h,l,{up,r4}),
+  digraph:add_edge(G,h,c,{up,r4}),
   digraph:add_edge(G,i,u,{right,r3}),
   digraph:add_edge(G,u,j,{right,r3}),
   digraph:add_edge(G,u,p,{down,r12}),
@@ -714,19 +674,4 @@ light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all 
               end
   end.
 
-% this function checks if the car can bypass and sends a response to the car accordingly
-ctc(Comm,Who,OtherCar) ->
-  Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
-  Bool2 = checkBypass2(Who,ets:first(junction)),
-  case {Bool1,Bool2} of
-    {true,true} -> % if it can, bypass
-      case Comm of
-        null -> cars:bypass(Who);
-        _-> communication_tower:receive_message(Comm,Who,{bypass})
-      end;
 
-    _ ->     case Comm of % if it can't, stop
-               null -> cars:stop(Who,OtherCar);
-               _-> communication_tower:receive_message(Comm,Who,{stop,OtherCar})
-             end
-  end.

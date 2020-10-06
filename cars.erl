@@ -526,7 +526,8 @@ turning(timeout,10,State = #cars_state{}) -> % turn according to direction and u
       %NextStateName = turning,
       %{next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir2 , nextTurnRoad = Road2 },10};
       io:format("EEEEEEEEEEEEEEEEEEEEEEError in state turning in process: ~p~n",[self()]),
-      Ans = server:checkBypass2(self(),ets:first(junction)),
+      Ans = server:error_in_turn(self()),
+      %Ans = server:checkBypass2(self(),ets:first(junction)),
       %rpc:call(PC,server,checkBypass2,[self(),ets:first(junction)]),
       if
         Ans == true  -> NextStateName = drive_straight,
@@ -610,7 +611,8 @@ turning(timeout,20,State = #cars_state{}) ->
     Dir == undefined ->  %{_,_,Dir2,Road2} = Con ,NextStateName = turning,
       %{next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir2 , nextTurnRoad = Road2 },20};
       io:format("EEEEEEEEEEEEEEEEEEEEEEError in state turning in process: ~p~n",[self()]),
-      Ans =server:checkBypass2(self(),ets:first(junction)),
+      Ans = server:error_in_turn(self()),
+%      Ans =server:checkBypass2(self(),ets:first(junction)),
 %        rpc:call(PC,server,checkBypass2,[self(),ets:first(junction)]),
       if
         Ans == true  -> NextStateName = drive_straight,

@@ -36,7 +36,7 @@ close_to_car(Pid,FirstKey) ->
                _-> close_to_car(Pid,ets:first(cars))
              end;
     _ ->  case Dir1 of % if the cars are in the same direction calculate the distance, if they're close send event to car, else, check next car
-            left -> case abs(Y-Y2)=<13  of
+            left -> case abs(Y-Y2)=<16  of
                       false -> case ets:member(cars,P2) of
                                  true -> close_to_car(Pid,ets:next(cars,P2));
                                  _-> close_to_car(Pid,ets:first(cars))
@@ -51,7 +51,7 @@ close_to_car(Pid,FirstKey) ->
                                                end
                                      end
                     end;
-            right -> case abs(Y-Y2)=<13 of
+            right -> case abs(Y-Y2)=<16 of
                        false -> case ets:member(cars,P2) of
                                   true -> close_to_car(Pid,ets:next(cars,P2));
                                   _-> close_to_car(Pid,ets:first(cars))
@@ -66,7 +66,7 @@ close_to_car(Pid,FirstKey) ->
                                                 end
                                       end
                      end;
-            up -> case abs(X-X2)=<13  of
+            up -> case abs(X-X2)=<16  of
                     false -> case ets:member(cars,P2) of
                                true -> close_to_car(Pid,ets:next(cars,P2));
                                _-> close_to_car(Pid,ets:first(cars))
@@ -81,7 +81,7 @@ close_to_car(Pid,FirstKey) ->
                                              end
                                    end
                   end;
-            down -> case abs(X-X2)=<13 of
+            down -> case abs(X-X2)=<16 of
                       false -> case ets:member(cars,P2) of
                                  true -> close_to_car(Pid,ets:next(cars,P2));
                                  _-> close_to_car(Pid,ets:first(cars))
@@ -403,7 +403,7 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nev]),car_monitor(PC1,PC2,PC3,PC4);
 
 
-                                 {accident,Name,Mon,Start,Speed} -> io:format("~p killed in accident ~n",[Pid]), % if there was an accident, start a new car where the old one started
+                                 {accident,Name,Mon,Start,Speed} ->  % if there was an accident, start a new car where the old one started
                                    cars:start(Name,Mon,Speed,Start,PC1),car_monitor(PC1,PC2,PC3,PC4);
 
                                  {badarg, [_, {_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if a sensor died, spawn a new one
