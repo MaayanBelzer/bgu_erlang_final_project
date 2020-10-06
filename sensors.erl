@@ -402,9 +402,19 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {move_to_comp3,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3,Nev]),car_monitor(PC1,PC2,PC3,PC4);
                                  {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nev]),car_monitor(PC1,PC2,PC3,PC4);
 
+%                                {accident,Name,Mon,Start,Speed} ->  % if there was an accident, start a new car where the old one started
+                                 {accident,Name,_,Start,Speed} ->  % if there was an accident, start a new car where the old one started
+                                   [{X,Y},_,_,_,_]  = Start,
+                                  % cars:start(Name,Mon,Speed,Start,PC1),
+                                   if
+                                     X >= 780, Y =< 472 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y >= 472 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y =< 472 ->rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y >= 472 ->rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     true -> io:format("Error")
 
-                                 {accident,Name,Mon,Start,Speed} ->  % if there was an accident, start a new car where the old one started
-                                   cars:start(Name,Mon,Speed,Start,PC1),car_monitor(PC1,PC2,PC3,PC4);
+                                   end;
+                                  % cars:start(Name,Mon,Speed,Start,PC1),car_monitor(PC1,PC2,PC3,PC4);
 
                                  {badarg, [_, {_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if a sensor died, spawn a new one
                                    SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor(PC1,PC2,PC3,PC4);
