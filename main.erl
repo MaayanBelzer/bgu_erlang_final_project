@@ -108,7 +108,6 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
   {noreply,State};
 
 handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) ->
-  io:format("~p~n", [{X,Y}]),
   if
     X >= 780, Y =< 472 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
     X >= 780, Y >= 472 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
@@ -125,8 +124,6 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
   bmpsmoke = BmpSmoke
   ,bmpCar1b =BmpCar1b ,bmpCar2b = BmpCar2b,
   bmpCar3b = BmpCar3b}) ->
-
-
   DC2=wxPaintDC:new(Panel),
   wxDC:clear(DC2),
   wxDC:drawBitmap(DC2,BmpRmap,{0,0}),
@@ -149,7 +146,7 @@ printsmoke(Key,Panel,BmpSmoke) ->
 
 printCars('$end_of_table',_,_,_,_,_,_,_) -> ok; % this function paints all of the cars
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
-  [{_,[{A,B},D,_,Type,_],_,_,_,_,PC,Nev}] = ets:lookup(cars,Key),
+  [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
   case Type of
     red -> case D of
@@ -180,10 +177,7 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
                   end;
 
 
-             Error -> io:format("error in printCars, D = ~p~n",[Error]),
-               io:format("cars ets inf: ~p~n",[ets:lookup(cars,Key)]),
-               io:format("cars state inf: ~p~n",[rpc:call(PC, sys, get_state, [Key])]),
-               ets:delete(cars,Key)
+             _ ->  ets:delete(cars,Key)
            end;
     grey -> case D of
               left -> case Nev of
@@ -213,10 +207,7 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
                    end;
 
 
-              Error -> io:format("error in printCars, D = ~p~n",[Error]),
-                io:format("cars ets inf: ~p~n",[ets:lookup(cars,Key)]),
-                io:format("cars state inf: ~p~n",[rpc:call(PC, sys, get_state, [Key])]),
-                ets:delete(cars,Key)
+              _ -> ets:delete(cars,Key)
             end;
     yellow ->  case D of
                  left -> case Nev of
@@ -246,17 +237,10 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
                       end;
 
 
-                 Error -> io:format("error in printCars, D = ~p~n",[Error]),
-                   io:format("cars ets inf: ~p~n",[ets:lookup(cars,Key)]),
-                   io:format("cars state inf: ~p~n",[rpc:call(PC, sys, get_state, [Key])]),
-                   ets:delete(cars,Key)
+                 _ -> ets:delete(cars,Key)
                end;
-    Error ->  io:format("error in printCar for reason ~p~n",[Error]),
-      io:format("cars ets inf: ~p~n",[ets:lookup(cars,Key)]),
-      io:format("cars state inf: ~p~n",[rpc:call(PC, sys, get_state, [Key])]),
-      ets:delete(cars,Key)
+    _ ->  ets:delete(cars,Key)
   end,
-
   case ets:member(cars,Key) of
     true -> printCars(ets:next(cars,Key),Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b);
     _ -> ok
@@ -307,7 +291,6 @@ handle_info({nodedown,PC},State)-> % if a node is down check which PC, move resp
       move_car(?PC4,ets:first(cars))
 
   end,
-
   {noreply, State}.
 
 handle_cast({delete_car, Pid},State) -> % delete car from ets
@@ -489,33 +472,25 @@ backup_pc(PCDown,NewPC) ->
   lists:foreach(Fun,L2), ok.
 
 %this function is the navigation system
-%main_navigation(X,Y,PC1,PC2,PC3,PC4) ->
 main_navigation(X,Y,PC1,_,_,_) ->
   Result =  check_cars(ets:first(cars)), % check if there is a car that already selected
   case Result of
-    null -> % if % in case there isn't a car that already selected,pick the close car
-            %  X >= 780, Y =< 472 -> rpc:call(PC1,server,server_search_close_car,[X,Y]);
-            %  X >= 780, Y >= 472 -> rpc:call(PC4,server,server_search_close_car,[X,Y]);
-            %  X =< 780, Y =< 472 -> rpc:call(PC2,server,server_search_close_car,[X,Y]);
-            %  X =< 780, Y >= 472 -> rpc:call(PC3,server,server_search_close_car,[X,Y]);
-            %  true -> error
-            %end,
-      io:format("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK~n"),
-    search_close_car(ets:first(cars),{X,Y});
+    null -> %  in case there isn't a car that is already selected, pick the closest car
+       search_close_car(ets:first(cars),{X,Y});
 
     % in case there isn't a car that already selected, search a close junction
-    Pid -> io:format("Pid was founded: ~p~n",[Pid]), Result2 = rpc:call(PC1,server,server_search_close_junc,[X,Y]),
+    Pid -> io:format("Pid was found: ~p~n",[Pid]), Result2 = rpc:call(PC1,server,server_search_close_junc,[X,Y]),
 
       case Result2 of
         null -> io:format("error in navigation, cant find close junction");
-        Dest ->io:format("Dest was founded: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid), % in case there is a close junction update the car destination
+        Dest ->io:format("Dest was found: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid), % in case there is a close junction update the car destination
           rpc:call(PC,server,update_car_nev,[Pid,Dest])
 
       end
   end,
   ok.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 search_close_car('$end_of_table',_)  -> io:format("error in nev, cant find close car~n");
 search_close_car(Key,{X,Y}) ->
   Ans = ets:member(cars,Key),
@@ -525,13 +500,9 @@ search_close_car(Key,{X,Y}) ->
     true-> {X2,Y2} = {0,0} ,Next = ets:first(cars), PC = null,
       search_close_car(ets:first(cars),{X,Y})
   end,
-    D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
   if
-    D =< 70 ->io:format("find a close car: ~p~n",[Key]),
-      io:format("car state: ~p~n",[sys:get_state(Key)]),
-      io:format("car ETS: ~p~n",[ets:lookup(cars,Key)]),
-      rpc:call(PC,ets,update_element,[cars,Key,[{8,in_process}]]);
-%      ets:update_element(cars,Pid,[{8,in_process}]);
+    D =< 70 -> rpc:call(PC,ets,update_element,[cars,Key,[{8,in_process}]]);
     true -> search_close_car(Next,{X,Y})
   end.
 
@@ -561,9 +532,7 @@ main_cars_mon(Key,PC1,PC2,PC3,PC4)->
       timer:sleep(2000),
 
       case ets:member(cars,Key) of
-        true -> io:format("PPPPPPPPPPPPPPPPPPPPPPPPPP process ~p killed in his PC ~n",[Key]),
-          io:format("PPPPPPPPPPPPPPPPPPPPPPPPPP Res is ~p~n",[Res]),
-          rpc:call(PC,server,deleteCar,[Key]),
+        true -> rpc:call(PC,server,deleteCar,[Key]),
 
           case PC of
             PC1 -> main_search_close_car(ets:first(cars),{1344,93}), rpc:call(PC,server,start_car,[Name,20,[{1344,93},left,r1,yellow,st],PC]);

@@ -111,8 +111,7 @@ close_to_junction(Pid,FirstKey) ->
   [{_,[{X,Y},Dir1,R1,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates, direction and road
 
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey), % get junction coordinates, road and the  traffic light pid
-
-%  [{{R2,_},[{X2,Y2},LightPid,{_,_}]}] = ets:lookup(junction,FirstKey),
+  
   case R1==R2 of % checks if the car and junction are on the same road
     false -> close_to_junction(Pid,ets:next(junction,FirstKey)); % if they're not, check next  junction
     _ -> case Dir1 of % if they are, check direction of car
@@ -204,34 +203,27 @@ outOfRange(Pid)->
 
     X >= 780,Y =< 472, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_2),
-%      io:format("move from pc_1 to pc_2~n"),
       outOfRange(Pid);
     X >= 780,Y =< 472, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_4),
-%      io:format("move from pc_1 to pc_4~n"),
       outOfRange(Pid);
 
     X =< 780,Y =< 472 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_1),
-%      io:format("move from pc_2 to pc_1~n"),
       outOfRange(Pid);
     X =< 780,Y =< 472 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_3),
-%      io:format("move from pc_2 to pc_3~n"),
       outOfRange(Pid);
 
     X =< 780,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_3,pc_2),
-%      io:format("move from pc_3 to pc_2~n"),
       outOfRange(Pid);
 
     X >= 780,Y >= 472,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_3),
-%      io:format("move from pc_4 to pc_3~n"),
       outOfRange(Pid);
     X >= 780,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_1),
-%      io:format("move from pc_4 to pc_1~n"),
       outOfRange(Pid);
 
     X < 0; Y < 0; X > 1344; Y > 890 -> cars:kill(Pid); % if car has left the screen, send event to kill it
@@ -243,7 +235,6 @@ outOfRange(Pid)->
 traffic_light_sensor(KeyList,'$end_of_table') -> traffic_light_sensor(KeyList,ets:first(junction));
 traffic_light_sensor(KeyList,Key) ->
   [{{R2,J},[{_,_},LightPid]}] =  ets:lookup(junction,Key), % get light road, junction and pid
-%  [{{R2,J},[{X2,Y2},LightPid,{_,_}]}] =  ets:lookup(junction,Key),
 
   case LightPid of
     nal -> traffic_light_sensor(KeyList,ets:next(junction,Key)); % if there is no traffic light, check next junction
@@ -258,7 +249,6 @@ traffic_light_sensor(KeyList,Key) ->
 sync_traffic([]) -> ok;
 sync_traffic([H|T]) ->
   [{{_,_},[{_,_},LightPid]}] =  ets:lookup(junction,H),
-%  [{{_,_},[{_,_},LightPid,{_,_}]}] =  ets:lookup(junction,H),
   traffic_light:sensor_msg(LightPid,red),sync_traffic(T).
 
 % this function checks if there has been an accident
@@ -384,7 +374,6 @@ car_monitor(PC1,PC2,PC3,PC4) ->
     {add_to_monitor,Pid} -> monitor(process, Pid),car_monitor(PC1,PC2,PC3,PC4); % add a new process to the monitor
     {_, _, _, Pid, Reason} ->  case Reason of % a process is down, check reason
                                  {outOfRange,Name,_,Start,Speed} -> % if a car is out of range start a new car in the PC where the old one started
-                                   %io:format("~p killed with reason outOfRange ~n",[Pid]),
                                    [{X,Y},Dir,Road,_,_]  = Start,
                                    E = lists:nth(rand:uniform(3),[yellow,red,grey]),
                                    NewStart = [{X,Y},Dir,Road,E,st],
@@ -402,10 +391,9 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {move_to_comp3,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3,Nev]),car_monitor(PC1,PC2,PC3,PC4);
                                  {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nev]),car_monitor(PC1,PC2,PC3,PC4);
 
-%                                {accident,Name,Mon,Start,Speed} ->  % if there was an accident, start a new car where the old one started
+
                                  {accident,Name,_,Start,Speed} ->  % if there was an accident, start a new car where the old one started
                                    [{X,Y},_,_,_,_]  = Start,
-                                  % cars:start(Name,Mon,Speed,Start,PC1),
                                    if
                                      X >= 780, Y =< 472 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
                                      X >= 780, Y >= 472 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
@@ -414,7 +402,6 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                      true -> io:format("Error")
 
                                    end;
-                                  % cars:start(Name,Mon,Speed,Start,PC1),car_monitor(PC1,PC2,PC3,PC4);
 
                                  {badarg, [_, {_,close_to_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if a sensor died, spawn a new one
                                    SensorPid = spawn(sensors,close_to_car,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,close_to_car), car_monitor(PC1,PC2,PC3,PC4);
@@ -432,8 +419,7 @@ car_monitor(PC1,PC2,PC3,PC4) ->
 
                                  killed -> car_monitor(PC1,PC2,PC3,PC4);
                                  normal -> car_monitor(PC1,PC2,PC3,PC4);
-                                 Else->  io:format("~p killed in reason ~p ~n",[Pid,Else]),
-                                   car_monitor(PC1,PC2,PC3,PC4)
+                                 _-> car_monitor(PC1,PC2,PC3,PC4)
                                end
 
   after 0 -> car_monitor(PC1,PC2,PC3,PC4)

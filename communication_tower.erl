@@ -85,11 +85,7 @@ handle_cast({Comm,Car,MSG},State)-> % checks what the message was and forward it
   case MSG of
     {s_light,M} -> server:s_light(Comm,Car,M);
     {s_close_to_car,M} -> server:s_close_to_car(Comm,Car,M);
-%    {car_finish_bypass} -> server:car_finish_bypass(Comm,Car);
-%    {car_finish_turn} -> server:car_finish_turn(Comm,Car);
     {deleteCar} -> server:deleteCar(Car);
-%    {f_bypass}->cars:f_bypass(Car);
-%    {f_turn} -> cars:f_turn(Car);
     {turn,M} -> cars:turn(Car,M);
     {bypass} -> cars:bypass(Car);
     {stop,M} -> cars:stop(Car,M);

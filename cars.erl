@@ -27,7 +27,7 @@
 
 %%Events
 -export([close_to_car/2,close_to_junc/4,accident/2,turn/2,bypass/1,far_from_car/1]).
--export([f_bypass/1,f_turn/1,stop/2,kill/1,add_sensor/3,switch_comp/3,check_response/2]).
+-export([stop/2,kill/1,add_sensor/3,switch_comp/3,check_response/2]).
 
 %% States
 -export([drive_straight/3,idle/3,turning/3,stopping/3,bypassing/3,send_msg/2,first_state/3]).
@@ -134,11 +134,8 @@ close_to_car(Pid,OtherCar) -> gen_statem:cast(Pid,{ctc,Pid,OtherCar}). % car is 
 close_to_junc(Pid,LightState,{R,J},LP) -> gen_statem:cast(Pid,{ctj,Pid,LightState,{R,J},LP}). % car is close to junction
 accident(Pid,OtherCar) ->   io:format("ACCIDENT between ~p and ~p ~n",[Pid,OtherCar]),gen_statem:cast(Pid,{acc,Pid,OtherCar}). % car got in accident
 turn(Pid,{Dir, Road}) ->gen_statem:cast(Pid,{turn,Pid,{Dir, Road}}). % car needs to turn
-f_turn(Pid) -> gen_statem:cast(Pid,{fturn,Pid}). % car finished turn
 bypass(Pid) -> gen_statem:cast(Pid,{byp,Pid}). % car needs to bypass
-f_bypass(Pid) -> gen_statem:cast(Pid,{fByp,Pid}). % car finished bypass
 far_from_car(Pid) -> gen_statem:cast(Pid,{far,Pid}). % car is now far from a different car
-
 stop(Pid,OtherCar) -> gen_statem:cast(Pid,{stop,Pid,OtherCar}). % car needs to stop
 kill(Pid) ->  gen_statem:cast(Pid,{kill,Pid}). % kill car
 send_msg(Pid,{From,Msg}) -> gen_statem:cast(Pid,{send,Pid,From,Msg}). % receive message from another car
@@ -323,9 +320,6 @@ drive_straight(cast,{add_sensor,_,Sensor,Type},State = #cars_state{}) -> % reviv
   NextStateName = drive_straight,ets:update_element(cars,self(),[{6,{drive_straight}}]) ,
   {next_state, NextStateName, State,get(speed)};
 
-drive_straight(cast,{fturn,_},_) -> % car finished turn, keep going straight
-  NextStateName = drive_straight,ets:update_element(cars,self(),[{6,{drive_straight}}]) ,
-  {next_state, NextStateName, #cars_state{turnCounter = 0},get(speed)};
 
 drive_straight(cast,{switch,Pid,From,To},_) -> % car moved PC, kill sensors, delete them from ets and send message to server with relevant info to start in different PC
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),K5 = get(sensor5),
@@ -348,14 +342,10 @@ drive_straight(cast,{kill,Pid},_) -> % car received kill message, kill sensors a
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),K5 = get(sensor5),
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),exit(K5,kill),
   ets:delete(sensors,K1), ets:delete(sensors,K2), ets:delete(sensors,K3), ets:delete(sensors,K4),ets:delete(sensors,K5),
-
-
-
   E1 =get(name),
   E2 = get(carMon),
   E3 = get(start),
   E4  = get(speed),
-
   server:deleteCar(Pid),
   {stop,{outOfRange,E1,E2,E3,E4}};
 
@@ -448,14 +438,11 @@ idle(cast,{switch,Pid,From,To},_) -> % switch PC
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),K5 = get(sensor5),
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),exit(K5,kill),
   ets:delete(sensors,K1), ets:delete(sensors,K2), ets:delete(sensors,K3), ets:delete(sensors,K4),ets:delete(sensors,K5),
-
-
   Con =  {idle},
   E1 =get(name),
   E3 = get(start),
   E4  = get(speed),
   [{_,C,_,_,_,_,_,Nev}] = ets:lookup(cars,Pid),
-
   case To of
     pc_1 -> server:deleteCar(Pid), {stop,{move_to_comp1,E1,E3,E4,C,From,To,Con,Nev}};
     pc_2 -> server:deleteCar(Pid), {stop,{move_to_comp2,E1,E3,E4,C,From,To,Con,Nev}};
@@ -522,13 +509,9 @@ turning(timeout,10,State = #cars_state{}) -> % turn according to direction and u
       NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}]),
       {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10};
 
-    Dir == undefined ->  %{_,_,Dir2,Road2} = Con ,
-      %NextStateName = turning,
-      %{next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir2 , nextTurnRoad = Road2 },10};
-      io:format("EEEEEEEEEEEEEEEEEEEEEEError in state turning in process: ~p~n",[self()]),
+    Dir == undefined ->
       Ans = server:error_in_turn(self()),
-      %Ans = server:checkBypass2(self(),ets:first(junction)),
-      %rpc:call(PC,server,checkBypass2,[self(),ets:first(junction)]),
+
       if
         Ans == true  -> NextStateName = drive_straight,
           {next_state, NextStateName,State,10};
@@ -545,32 +528,12 @@ turning(timeout,10,State = #cars_state{}) -> % turn according to direction and u
           {stop,{outOfRange,E1,E2,E3,E4}}
       end;
 
-%      NextStateName = drive_straight,
-%      {next_state, NextStateName,State,10};
-
-
-
 
     true ->   ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]),
       NextStateName = drive_straight, ets:update_element(cars,self(),[{6,{drive_straight}}]),
       {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10}
-  %    Pid = self(),
-  %    {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
-  %    case Bool1 of
-  %      true -> communication_tower:receive_message(To,Pid,{car_finish_turn}),
-  %        timer:sleep(10);
-  %      _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
-  %        case Bool2 of
-  %          true -> cars:send_msg(To2,{Pid,{car_finish_turn}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
-  %            timer:sleep(10);
-  %          _->  server:car_finish_turn(null,self()),timer:sleep(10)
-  %        end
-  %    end
-
 
   end;
-% NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}])  ,
-% {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },10};
 
 turning(timeout,20,State = #cars_state{}) ->
   [{P,[{X,Y},D,R,Type,_],_,_,_,_,_,_}] = ets:lookup(cars,self()),
@@ -608,12 +571,8 @@ turning(timeout,20,State = #cars_state{}) ->
       NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}]),
       {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },20};
 
-    Dir == undefined ->  %{_,_,Dir2,Road2} = Con ,NextStateName = turning,
-      %{next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir2 , nextTurnRoad = Road2 },20};
-      io:format("EEEEEEEEEEEEEEEEEEEEEEError in state turning in process: ~p~n",[self()]),
+    Dir == undefined ->
       Ans = server:error_in_turn(self()),
-%      Ans =server:checkBypass2(self(),ets:first(junction)),
-%        rpc:call(PC,server,checkBypass2,[self(),ets:first(junction)]),
       if
         Ans == true  -> NextStateName = drive_straight,
           {next_state, NextStateName,State,20};
@@ -630,38 +589,18 @@ turning(timeout,20,State = #cars_state{}) ->
           {stop,{outOfRange,E1,E2,E3,E4}}
       end;
 
-%      NextStateName = drive_straight,
-%      {next_state, NextStateName,State,10};
-
 
     true -> ets:update_element(cars,P,[{2,[{X ,Y },Dir,Road,Type,st]}]),
       NextStateName = drive_straight, ets:update_element(cars,self(),[{6,{drive_straight}}]),
       {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },20}
-%      Pid = self(),
-%      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
-%      case Bool1 of
-%        true -> communication_tower:receive_message(To,Pid,{car_finish_turn}),
-%          timer:sleep(10);
-%        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
-%          case Bool2 of
-%            true -> cars:send_msg(To2,{Pid,{car_finish_turn}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
-%              timer:sleep(10);
-%            _->  server:car_finish_turn(null,self()),timer:sleep(10)
-%          end
-%      end
   end;
-%  NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}])  ,
-% {next_state, NextStateName, #cars_state{turnCounter = C + 1,nextTurnDir = Dir , nextTurnRoad = Road },20};
 
 turning(cast,{ctj,_,_,_,_},State = #cars_state{}) -> % car is close to junction, keep turning
   Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad, C = State#cars_state.turnCounter,
   NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}])  ,
   {next_state, NextStateName, #cars_state{turnCounter = C ,nextTurnDir = Dir , nextTurnRoad = Road },get(speed)};
 
-%turning(cast,{ctc,_,OtherCar},State = #cars_state{}) -> % car is close to another car, spawn sensor and stop
-%  spawn(sensors,far_from_car,[self(),OtherCar]),
-%  NextStateName = stopping, ets:update_element(cars,self(),[{6,{drive_straight}}]) ,
-%  {next_state, NextStateName, State};
+
 turning(cast,{ctc,_,_},State = #cars_state{}) ->
   Dir = State#cars_state.nextTurnDir, Road = State#cars_state.nextTurnRoad, C = State#cars_state.turnCounter,
   NextStateName = turning,ets:update_element(cars,self(),[{6,{turning,State#cars_state.turnCounter,State#cars_state.nextTurnDir,State#cars_state.nextTurnRoad}}])  ,
@@ -873,19 +812,14 @@ bypassing(timeout,8,State = #cars_state{}) -> % check light and keep bypassing i
       {next_state, NextStateName, #cars_state{bypassCounter = C},get(speed)};
     _ -> case sys:get_state(LP) of
            {green,_} -> NextStateName = bypassing, ets:update_element(cars,self(),[{6,{bypassing,State#cars_state.bypassCounter}}]) ,
-             %{next_state, NextStateName, #cars_state{bypassCounter = 100},get(speed)};
              {next_state, NextStateName, #cars_state{bypassCounter = 100},10};
            _ -> NextStateName = bypassing, ets:update_element(cars,self(),[{6,{bypassing,State#cars_state.bypassCounter}}]) ,
              {next_state, NextStateName, #cars_state{lightPid = LP},8}
          end
   end;
 
-bypassing(cast,{fByp,_},_) -> % finished bypassing, go straight
-  NextStateName = drive_straight, ets:update_element(cars,self(),[{6,{drive_straight}}]) ,
-  {next_state, NextStateName, #cars_state{bypassCounter = 0},get(speed)};
 
 bypassing(cast,{acc,Pid,_},_) -> % car got in an accident
-
   K1 = get(sensor1), K2 = get(sensor2), K3 = get(sensor3), K4 = get(sensor4),K5 = get(sensor5),
   exit(K1,kill),exit(K2,kill),exit(K3,kill),exit(K4,kill),exit(K5,kill),
   ets:delete(sensors,K1), ets:delete(sensors,K2), ets:delete(sensors,K3), ets:delete(sensors,K4),ets:delete(sensors,K5),
@@ -931,20 +865,8 @@ bypassing(timeout,20,State = #cars_state{}) -> % bypass a car - move to left lan
 
 
     true ->  NextStateName = drive_straight, ets:update_element(cars,self(),[{6,{drive_straight}}])
-%      Pid = self(),
-%      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
-%      case Bool1 of
-%        true -> communication_tower:receive_message(To,Pid,{car_finish_bypass}),
-%          timer:sleep(10);
-%        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
-%          case Bool2 of
-%            true -> cars:send_msg(To2,{Pid,{car_finish_bypass}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
-%              timer:sleep(10);
-%            _->   server:car_finish_bypass(null,self())
-%          end
-%      end
+
   end,
-%  NextStateName = bypassing, ets:update_element(cars,self(),[{6,{bypassing,State#cars_state.bypassCounter}}]) ,
   {next_state, NextStateName, #cars_state{bypassCounter = C + 1},20};
 
 bypassing(timeout,10,State = #cars_state{}) ->
@@ -980,20 +902,7 @@ bypassing(timeout,10,State = #cars_state{}) ->
 
 
     true -> NextStateName = drive_straight, ets:update_element(cars,self(),[{6,{drive_straight}}])
-%      Pid = self(),
-%      {Bool1,To} = check_comms_d(Pid,ets:first(comms)),
-%      case Bool1 of
-%        true -> communication_tower:receive_message(To,Pid,{car_finish_bypass}),
-%          timer:sleep(10);
-%        _-> {Bool2,To2} = check_close_car(Pid,ets:first(cars)),
-%          case Bool2 of
-%            true -> cars:send_msg(To2,{Pid,{car_finish_bypass}}),io:format("sent message to ~p from ~p~n",[To2,Pid]),
-%              timer:sleep(10);
-%            _->   server:car_finish_bypass(null,self())
-%          end
-%      end
   end,
-%  NextStateName = bypassing, ets:update_element(cars,self(),[{6,{bypassing,State#cars_state.bypassCounter}}]) ,
   {next_state, NextStateName, #cars_state{bypassCounter = C + 1},10};
 
 bypassing(cast,{send,Who,From,Msg},State = #cars_state{})-> % send message to another car or to comm tower
@@ -1089,7 +998,7 @@ check_response(Pid,Msg) ->
   Ans = ets:member(cars,Pid),
   if
     Ans == true -> case sys:get_state(Pid) of
-                     {stopping,_} ->io:format("check_response is activated~n"), communication_tower:receive_message(To,Pid,Msg);
+                     {stopping,_} -> communication_tower:receive_message(To,Pid,Msg);
                      _-> ok
                    end;
     true -> ok

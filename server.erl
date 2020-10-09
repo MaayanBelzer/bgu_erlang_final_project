@@ -25,7 +25,7 @@
 % gen_server events
 -export([s_close_to_car/3,s_light/3,start/0,start/5,
   deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/7,update_monitor/1,smoke/4,deletesmoke/1,print_light/2,
-  search_close_car/2,search_close_junc/2,update_car_nev/2,server_search_close_car/2,server_search_close_junc/2,light/4,checkBypass/3,checkBypass2/2,
+  search_close_junc/2,update_car_nev/2,server_search_close_junc/2,light/4,checkBypass/3,checkBypass2/2,
   error_in_turn/1]).
 
 -define(SERVER, ?MODULE).
@@ -161,7 +161,6 @@ smoke(Car1,L1,Car2,L2)-> gen_server:cast(?MODULE,{smoke,Car1,L1,Car2,L2}).
 deletesmoke(Pid) -> gen_server:cast(?MODULE,{delsmoke,Pid}).
 print_light(X,Y) -> printTrafficLight(ets:first(junction),X,Y).
 update_car_nev(Pid,Dest) -> ets:update_element(cars,Pid,[{8,Dest}]).
-server_search_close_car(X,Y) -> gen_server:cast(?MODULE,{server_search_close_car,X,Y}).
 server_search_close_junc(X,Y) -> gen_server:call(?MODULE,{server_search_close_junc,X,Y}).
 error_in_turn(Pid) -> gen_server:call(?MODULE,{error_in_turn,Pid}).
 
@@ -192,7 +191,6 @@ handle_call({server_search_close_junc,X,Y},_,State) ->
   {reply, Res, State};
 
 handle_call({error_in_turn,Pid},_,State) ->
-%  Res = checkBypass2(Pid,ets:first(junction)),
   Res = checkTurn(Pid,ets:first(junction)),
   {reply, Res, State};
 
@@ -211,9 +209,7 @@ handle_call(_Request, _From, State) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
 
-handle_cast({server_search_close_car,X,Y},State) ->
-  search_close_car(ets:first(cars),{X,Y}),
-  {noreply, State};
+
 
 handle_cast({smoke,Car1,L1,Car2,L2},State) -> % send message to car monitor about a nodedown
   rpc:call(get(home),main,start_smoke,[Car1,L1,Car2,L2]),
@@ -592,33 +588,19 @@ keys(TableName, CurrentKey, Acc) ->
 
 % this function search a close traffic light, in case there is a close traffic light the function print the traffic light color
 printTrafficLight('$end_of_table',_,_) ->io:format("there is no close traffic light ~n"),
-  % io:format("the number of the traffic light is: ~p~n",[length(keys(junction,ets:first(junction),[]))]),
   ok;
 printTrafficLight(Key,X,Y) ->
   [{_,[{XP,YP},LightPid]}] =  ets:lookup(junction,Key),
   case LightPid of
     nal-> printTrafficLight(ets:next(junction,Key),X,Y);
-    _-> %D = math:sqrt(math:pow(X-(XP + 15),2) + math:pow(Y-(YP + 17),2)),
-      D = math:sqrt(math:pow(X-XP ,2) + math:pow(Y-YP ,2)),
+    _->  D = math:sqrt(math:pow(X-XP ,2) + math:pow(Y-YP ,2)),
       if
         D =< 80 -> {C,_} =sys:get_state(LightPid),
           io:format("the color of the traffic light is: ~p~n",[C]);
-%          io:format("the traffic light loction: ~p~n",[{XP,YP}]);
         true -> printTrafficLight(ets:next(junction,Key),X,Y)
       end
   end.
 
-% this function search a close car, in case there is a close car the function update his ETS
-search_close_car('$end_of_table',_)  -> io:format("error in nev, cant find close car~n");
-search_close_car(Key,{X,Y}) ->  [{Pid,[{X2,Y2},_,_,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Key),
-  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
-  if
-    D =< 100 ->io:format("find a close car: ~p~n",[Key]),
-      io:format("car state: ~p~n",[sys:get_state(Key)]),
-      io:format("car ETS: ~p~n",[ets:lookup(cars,Key)]),
-      ets:update_element(cars,Pid,[{8,in_process}]);
-    true -> search_close_car(ets:next(cars,Key),{X,Y})
-  end.
 
 % this function search a close junction, in case there is a close junction the function return his name
 search_close_junc('$end_of_table',_)  -> null;
@@ -648,9 +630,9 @@ light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all 
       end;
 
     Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
-                Dest /= J -> Trail = digraph:get_short_path(Graph,J,Dest),io:format(" Trail : ~p~n",[Trail]),
+                Dest /= J -> Trail = digraph:get_short_path(Graph,J,Dest),io:format("~p Trail : ~p~n",[Who,Trail]),
                   case Trail of
-                    false -> io:format("The trail isn't exists, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
+                    false -> io:format("The trail doesn't exist, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
                       E = lists:nth(rand:uniform(length(List)),List),
                       {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
                       case Comm of
@@ -664,7 +646,7 @@ light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all 
                         _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
                       end
                   end;
-                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p is reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
+                true -> ets:update_element(cars,Who,[{8,null}]),io:format("~p has reached its destination~n",[Who]),% in case the car reached its destination, pick a random direction
                   E = lists:nth(rand:uniform(length(List)),List),
                   {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
                   case Comm of
