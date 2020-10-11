@@ -50,11 +50,11 @@ start(Name,{{R,J},[{X,Y}]}) ->
 %% process to initialize.
 %init([]) ->
 
-%  {ok, red, #traffic_light_state{},2000}; % TODO delete
+
 
 
 init({{R,J},[{X,Y}]}) ->
-  ets:insert(junction,{{R,J},[{X,Y},self()]}),
+  ets:insert(junction,{{R,J},[{X,Y},self()]}), % insert junction to ets and go to red
   {ok, red, #traffic_light_state{},2000}.
 
 
@@ -112,7 +112,7 @@ green(timeout,3000,State = #traffic_light_state{}) -> % after 3 seconds turn yel
   NextStateName = yellow,
   {next_state, NextStateName, State,1000};
 
-green(cast,{msg,Color},State = #traffic_light_state{}) -> % if message received is red go to yellow for 1 second, if it's green stay green for 3 seconds
+green(cast,{msg,Color},State = #traffic_light_state{}) -> % if message received is red go to red for 4 seconds, if it's green stay green for 3 seconds
   case Color of
     red ->
       NextStateName = red,

@@ -111,7 +111,7 @@ close_to_junction(Pid,FirstKey) ->
   [{_,[{X,Y},Dir1,R1,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car coordinates, direction and road
 
   [{{R2,_},[{X2,Y2},LightPid]}] = ets:lookup(junction,FirstKey), % get junction coordinates, road and the  traffic light pid
-  
+
   case R1==R2 of % checks if the car and junction are on the same road
     false -> close_to_junction(Pid,ets:next(junction,FirstKey)); % if they're not, check next  junction
     _ -> case Dir1 of % if they are, check direction of car
@@ -386,10 +386,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
 
                                    end;
                                  % move car to different PC:
-                                 {move_to_comp1,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC1,server,moved_car,[Name,Speed,Start,C,Con,PC1,Nev]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp2,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC2,server,moved_car,[Name,Speed,Start,C,Con,PC2,Nev]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp3,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3,Nev]),car_monitor(PC1,PC2,PC3,PC4);
-                                 {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nev} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nev]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp1,Name,Start,Speed,C,_,_,Con,Nav} ->  rpc:call(PC1,server,moved_car,[Name,Speed,Start,C,Con,PC1,Nav]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp2,Name,Start,Speed,C,_,_,Con,Nav} ->  rpc:call(PC2,server,moved_car,[Name,Speed,Start,C,Con,PC2,Nav]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp3,Name,Start,Speed,C,_,_,Con,Nav} ->  rpc:call(PC3,server,moved_car,[Name,Speed,Start,C,Con,PC3,Nav]),car_monitor(PC1,PC2,PC3,PC4);
+                                 {move_to_comp4,Name,Start,Speed,C,_,_,Con,Nav} ->  rpc:call(PC4,server,moved_car,[Name,Speed,Start,C,Con,PC4,Nav]),car_monitor(PC1,PC2,PC3,PC4);
 
 
                                  {accident,Name,_,Start,Speed} ->  % if there was an accident, start a new car where the old one started
@@ -412,7 +412,7 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {{badmatch,_},[{_,car_accident,_,_}]} ->[{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
                                    SensorPid = spawn(sensors,car_accident,[Car,ets:first(cars)]), cars:add_sensor(Car,SensorPid,car_accident), car_monitor(PC1,PC2,PC3,PC4);
 
-                                 {badarg, [_, {_,far_from_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
+                                 {badarg, [_, {_,far_from_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid), % if far from car sensor died, send event to car
                                    cars:far_from_car(Car), car_monitor(PC1,PC2,PC3,PC4);
                                  {{badmatch,_},[{_,far_from_car,_,_}]} -> [{_,Car}] = ets:lookup(sensors,Pid),ets:delete(sensors,Pid),
                                    cars:far_from_car(Car), car_monitor(PC1,PC2,PC3,PC4);

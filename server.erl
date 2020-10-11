@@ -25,7 +25,7 @@
 % gen_server events
 -export([s_close_to_car/3,s_light/3,start/0,start/5,
   deleteCar/1,deletePid/1,update_car_location/0,start_car/4,moved_car/7,update_monitor/1,smoke/4,deletesmoke/1,print_light/2,
-  search_close_junc/2,update_car_nev/2,server_search_close_junc/2,light/4,checkBypass/3,checkBypass2/2,
+  search_close_junc/2,update_car_nav/2,server_search_close_junc/2,light/4,checkBypass/3,checkBypass2/2,
   error_in_turn/1]).
 
 -define(SERVER, ?MODULE).
@@ -155,14 +155,14 @@ deleteCar(Pid)-> gen_server:cast(?MODULE,{del,Pid}). % delete car from ets
 deletePid(Pid)-> gen_server:cast(?MODULE,{delP,Pid}). % kill pid
 update_car_location() -> gen_server:call(?MODULE,update_car). % main requests car ets
 start_car(Name,Type,Start,PC)-> gen_server:cast(?MODULE,{start_car,Name,Type,Start,PC}). % initialize car process
-moved_car(Name,Type,Start,Location,Con,PC,Nev) -> gen_server:cast(?MODULE,{movedCar,Name,Type,Start,Location,Con,PC,Nev}). % car moved from one PC to another
+moved_car(Name,Type,Start,Location,Con,PC,Nav) -> gen_server:cast(?MODULE,{movedCar,Name,Type,Start,Location,Con,PC,Nav}). % car moved from one PC to another
 update_monitor(PC) -> gen_server:cast(?MODULE,{nodedown,PC}). % update the car monitor that a PC is down
-smoke(Car1,L1,Car2,L2)-> gen_server:cast(?MODULE,{smoke,Car1,L1,Car2,L2}).
-deletesmoke(Pid) -> gen_server:cast(?MODULE,{delsmoke,Pid}).
-print_light(X,Y) -> printTrafficLight(ets:first(junction),X,Y).
-update_car_nev(Pid,Dest) -> ets:update_element(cars,Pid,[{8,Dest}]).
-server_search_close_junc(X,Y) -> gen_server:call(?MODULE,{server_search_close_junc,X,Y}).
-error_in_turn(Pid) -> gen_server:call(?MODULE,{error_in_turn,Pid}).
+smoke(Car1,L1,Car2,L2)-> gen_server:cast(?MODULE,{smoke,Car1,L1,Car2,L2}). % activate smoke 
+deletesmoke(Pid) -> gen_server:cast(?MODULE,{delsmoke,Pid}). % delete smoke
+print_light(X,Y) -> printTrafficLight(ets:first(junction),X,Y). % print traffic light state
+update_car_nav(Pid,Dest) -> ets:update_element(cars,Pid,[{8,Dest}]). % update ets element with destination
+server_search_close_junc(X,Y) -> gen_server:call(?MODULE,{server_search_close_junc,X,Y}). % search close junction
+error_in_turn(Pid) -> gen_server:call(?MODULE,{error_in_turn,Pid}). % correct errors in turn
 
 
 
@@ -186,11 +186,11 @@ handle_call(update_car, _, State) -> % return list of car ets to main
   Car = ets:tab2list(cars),
   {reply, {ok,Car}, State};
 
-handle_call({server_search_close_junc,X,Y},_,State) ->
+handle_call({server_search_close_junc,X,Y},_,State) -> % return a close enough junction
   Res = search_close_junc(ets:first(junction),{X,Y}),
   {reply, Res, State};
 
-handle_call({error_in_turn,Pid},_,State) ->
+handle_call({error_in_turn,Pid},_,State) -> % return if car can go straight
   Res = checkTurn(Pid,ets:first(junction)),
   {reply, Res, State};
 
@@ -235,8 +235,8 @@ handle_cast({delP,Pid},State) -> % kill process with pid PID
   exit(Pid,kill),
   {noreply, State};
 
-handle_cast({movedCar,Name,Type,Start,Location,Con,PC,Nev},State) -> % start a car in local PC when it moved into range
-  cars:start(Name,get(car_monitor),Type,Start,Location,Con,PC,Nev),
+handle_cast({movedCar,Name,Type,Start,Location,Con,PC,Nav},State) -> % start a car in local PC when it moved into range
+  cars:start(Name,get(car_monitor),Type,Start,Location,Con,PC,Nav),
   {noreply, State};
 
 handle_cast({light,Comm,Who,{_,J}}, State) -> % decide whether the car turns left, right or straight
@@ -251,12 +251,12 @@ handle_cast({ctc,Comm,Who,OtherCar}, State) -> % decide whether the car bypasses
   if
     Ans == true, Ans2 == true ->
 
-      [{_,_,_,_,_,_,_,Nev}] = ets:lookup(cars,Who),
+      [{_,_,_,_,_,_,_,Nav}] = ets:lookup(cars,Who),
       Bool1 = checkBypass(Who,OtherCar,ets:first(cars)), % check if the car can bypass
       Bool2 = checkBypass2(Who,ets:first(junction)),
 
       if
-        Nev == null; Nev == in_process  -> Bool3 = true ;
+        Nav == null; Nav == in_process  -> Bool3 = true ;
         true -> Bool3 = false
       end,
       case {Bool1,Bool2,Bool3} of
@@ -336,15 +336,15 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 % this function checks if there is another car in front of the car he wants to bypass, and if there isn't, return true
-checkBypass(_,_,'$end_of_table') -> true;
+checkBypass(_,_,'$end_of_table') -> true; % return true if no car is too close
 checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_,_}] =  ets:lookup(cars,Who),
   [{P2,[{X2,Y2},_,R2,_,_],_,_,_,_,_,_}] = ets:lookup(cars,FirstKey),
   if
     R == R2, P2 /= Who, P2 /= OtherCar ->
       case Dir1 of % checks all cars that are going the same direction and same road
         left -> D = X-X2, if
-                            D =< 200 , D >= 0 -> false;
-                            true -> checkBypass(Who,OtherCar,ets:next(cars,P2))
+                            D =< 200 , D >= 0 -> false; % if the distance between cars is short enough, return false
+                            true -> checkBypass(Who,OtherCar,ets:next(cars,P2)) % else, check next car
                           end;
 
         right ->  D = X2-X, if
@@ -361,15 +361,14 @@ checkBypass(Who,OtherCar,FirstKey) -> [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_,_}] =  et
                           end
       end;
 
-    true -> checkBypass(Who,OtherCar,ets:next(cars,FirstKey))
+    true -> checkBypass(Who,OtherCar,ets:next(cars,FirstKey)) % if the car isn't going the same direction, check next car
   end.
 
-% this function checks if there is a close junction when a car wants to bypass and if it can go straight if there is
-checkBypass2(_,'$end_of_table') -> true;
+% this function checks if there is a close junction when a car wants to bypass and if it can go straight
+checkBypass2(_,'$end_of_table') -> true; 
 checkBypass2(Who,Key) ->
   [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_,_}] =  ets:lookup(cars,Who),
   [{{R2,J},[{X2,Y2},_]}] = ets:lookup(junction,Key),
-%  [{{R2,J},[{X2,Y2},_,{_,_}]}] = ets:lookup(junction,Key),
   case R == R2 of
     false -> checkBypass2(Who,ets:next(junction,Key));
     _ -> case Dir1 of % checks distance from junctions on the same road
@@ -427,6 +426,7 @@ checkBypass2(Who,Key) ->
          end
   end.
 
+% this function checks if there is a close junction and if it can go straight 
 checkTurn(_,'$end_of_table') -> true;
 checkTurn(Who,Key) ->
   [{_,[{X,Y},Dir1,R,_,_],_,_,_,_,_,_}] =  ets:lookup(cars,Who),
@@ -441,7 +441,7 @@ checkTurn(Who,Key) ->
                                true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
                                  L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
                                  L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                 case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                 case L2 of % if it can go straight, check next junction and if it can't, return false
                                    [] -> false;
                                    _ -> checkTurn(Who,ets:next(junction,Key))
                                  end
@@ -454,7 +454,7 @@ checkTurn(Who,Key) ->
                                  true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
                                    L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
                                    L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                   case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                   case L2 of % if it can go straight, check next junction and if it can't, return false
                                      [] -> false;
                                      _ -> checkTurn(Who,ets:next(junction,Key))
                                    end
@@ -466,7 +466,7 @@ checkTurn(Who,Key) ->
                               true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
                                 L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
                                 L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                case L2 of % if it can go straight, check next junction and if it can't, return false
                                   [] -> false;
                                   _ -> checkTurn(Who,ets:next(junction,Key))
                                 end
@@ -478,7 +478,7 @@ checkTurn(Who,Key) ->
                                true -> List =  digraph:out_neighbours(get(graph),J), % if it's close, check if it can go straight
                                  L = [getEdgeLabel(get(graph),digraph:out_edges(get(graph),J),E)||E <- List],
                                  L2 = [{Dir,Road}|| {Dir,Road} <- L, R==Road],
-                                 case L2 of % if it can go straight, check next junction and if it can't, don't bypass
+                                 case L2 of % if it can go straight, check next junction and if it can't, return false
                                    [] -> false;
                                    _ -> checkTurn(Who,ets:next(junction,Key))
                                  end
@@ -589,15 +589,15 @@ keys(TableName, CurrentKey, Acc) ->
 % this function search a close traffic light, in case there is a close traffic light the function print the traffic light color
 printTrafficLight('$end_of_table',_,_) ->io:format("there is no close traffic light ~n"),
   ok;
-printTrafficLight(Key,X,Y) ->
+printTrafficLight(Key,X,Y) -> 
   [{_,[{XP,YP},LightPid]}] =  ets:lookup(junction,Key),
   case LightPid of
-    nal-> printTrafficLight(ets:next(junction,Key),X,Y);
-    _->  D = math:sqrt(math:pow(X-XP ,2) + math:pow(Y-YP ,2)),
-      if
-        D =< 80 -> {C,_} =sys:get_state(LightPid),
+    nal-> printTrafficLight(ets:next(junction,Key),X,Y); % if there is no traffic light in this junction, check next junction
+    _->  D = math:sqrt(math:pow(X-XP ,2) + math:pow(Y-YP ,2)), 
+      if 
+        D =< 80 -> {C,_} =sys:get_state(LightPid), % if the distance between the traffic light and the click is short enough, print the color of the light
           io:format("the color of the traffic light is: ~p~n",[C]);
-        true -> printTrafficLight(ets:next(junction,Key),X,Y)
+        true -> printTrafficLight(ets:next(junction,Key),X,Y) % else, check next junction
       end
   end.
 
@@ -607,14 +607,14 @@ search_close_junc('$end_of_table',_)  -> null;
 search_close_junc(Key,{X,Y}) -> [{{_,J},[{XP,YP},_]}] =  ets:lookup(junction,Key),
   D = math:sqrt(math:pow(X-(XP-10),2) + math:pow(Y-(YP-10),2)),
   if
-    D =< 100 -> J;
+    D =< 100 -> J; 
     true -> search_close_junc(ets:next(junction,Key),{X,Y})
   end.
 
 % this function decides in which direction the car will continue and sends the response to the car
 light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all possible directions the car can continue towards using digraph
-  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Who),% get the cars navigation status
-  case Nev of
+  [{_,[_,_,_,_,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Who),% get the cars navigation status
+  case Nav of
     null   -> E = lists:nth(rand:uniform(length(List)),List),% in case the navigation status is null or in_process, pick a random direction
       {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
       case Comm of
@@ -622,24 +622,24 @@ light(Graph,Comm,Who,J) ->   List =  digraph:out_neighbours(Graph,J), % get all 
         _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
       end;
 
-    in_process -> E = lists:nth(rand:uniform(length(List)),List),
+    in_process -> E = lists:nth(rand:uniform(length(List)),List), 
       {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
       case Comm of
         null -> cars:turn(Who, {Dir, Road});
         _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
       end;
 
-    Dest   -> if % in case the navigation status is a destination Junction and the car isn't reached its destination yet, find a trail
+    Dest   -> if % in case the navigation status is a destination Junction and the car hasn't reached its destination yet, find a trail
                 Dest /= J -> Trail = digraph:get_short_path(Graph,J,Dest),io:format("~p Trail : ~p~n",[Who,Trail]),
                   case Trail of
-                    false -> io:format("The trail doesn't exist, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail isn't exists, pick a random direction
+                    false -> io:format("The trail doesn't exist, pick a new junction"),ets:update_element(cars,Who,[{8,null}]), % in case the trail doesn't exist, pick a random direction
                       E = lists:nth(rand:uniform(length(List)),List),
                       {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),E),
                       case Comm of
                         null -> cars:turn(Who, {Dir, Road});
                         _-> communication_tower:receive_message(Comm,Who,{turn,{Dir, Road}})
                       end;
-                    _->  Next = hd(tl(Trail)),% in case the trail is exists, get the next junction
+                    _->  Next = hd(tl(Trail)),% in case the trail does exist, get the next junction
                       {Dir, Road} = getEdgeLabel(Graph,digraph:out_edges(Graph,J),Next),
                       case Comm of
                         null -> cars:turn(Who, {Dir, Road});

@@ -102,12 +102,11 @@ handle_event(#wx{event = #wxClose{}},State = #state {frame = Frame}) -> % close 
   wx:destroy(),
   {stop,normal,State};
 
-handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) ->
-  spawn(main,main_navigation,[X,Y,get(?PC1),get(?PC2),get(?PC3),get(?PC4)]),
-  io:format("~p~n", [{X,Y}]),
+handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) -> % when left click has been pressed, activate navigation function
+  spawn(main,main_navigation,[X,Y,get(?PC1),get(?PC2),get(?PC3),get(?PC4)]), % spawn the process in the corresponding PC
   {noreply,State};
 
-handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) ->
+handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) -> % when the right click was pressed, activate a function that returns the color of the light that was pressed
   if
     X >= 780, Y =< 472 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
     X >= 780, Y >= 472 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
@@ -134,7 +133,7 @@ handle_sync_event(_Event,_,State) ->
   {noreply, State}.
 
 
-printsmoke('$end_of_table',_,_) -> ok; % this function paints all of the cars
+printsmoke('$end_of_table',_,_) -> ok; % this function paints the smoke after an accident
 printsmoke(Key,Panel,BmpSmoke) ->
   DI =wxClientDC:new(Panel),
   case ets:member(smoke,Key) of
@@ -146,31 +145,31 @@ printsmoke(Key,Panel,BmpSmoke) ->
 
 printCars('$end_of_table',_,_,_,_,_,_,_) -> ok; % this function paints all of the cars
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
-  [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
+  [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
-  case Type of
+  case Type of 
     red -> case D of
-             left -> case Nev of
-                       null-> wxDC:drawBitmap(DI, BmpCar1, {A, B});
-                       _->   wxDC:drawBitmap(DI, BmpCar1b, {A, B})
+             left -> case Nav of 
+                       null-> wxDC:drawBitmap(DI, BmpCar1, {A, B}); % if car navigation status is null, print the original color
+                       _->   wxDC:drawBitmap(DI, BmpCar1b, {A, B}) % if car is navigating, print blue color
                      end;
 
-             down ->case Nev of
-                      null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}),
+             down ->case Nav of
+                      null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,-300,{A,B}), % if direction is not left, rotate the image
                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                       _-> Im = wxBitmap:convertToImage(BmpCar1b), Im2 = wxImage:rotate(Im,-300,{A,B}),
                         BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                     end;
 
-             right ->case Nev of
-                       null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),
+             right ->case Nav of
+                       null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,600,{A,B}),% if direction is not left, rotate the image
                          BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                        _->  Im = wxBitmap:convertToImage(BmpCar1b), Im2 = wxImage:rotate(Im,600,{A,B}),
                          BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                      end;
 
-             up ->case Nev of
-                    null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),
+             up ->case Nav of
+                    null-> Im = wxBitmap:convertToImage(BmpCar1), Im2 = wxImage:rotate(Im,300,{A,B}),% if direction is not left, rotate the image
                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                     _-> Im = wxBitmap:convertToImage(BmpCar1b), Im2 = wxImage:rotate(Im,300,{A,B}),
                       BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
@@ -180,27 +179,27 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
              _ ->  ets:delete(cars,Key)
            end;
     grey -> case D of
-              left -> case Nev of
+              left -> case Nav of
                         null-> wxDC:drawBitmap(DI, BmpCar2, {A, B});
                         _->   wxDC:drawBitmap(DI, BmpCar2b, {A, B})
                       end;
 
-              down ->case Nev of
-                       null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,-300,{A,B}),
+              down ->case Nav of
+                       null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,-300,{A,B}),% if direction is not left, rotate the image
                          BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                        _-> Im = wxBitmap:convertToImage(BmpCar2b), Im2 = wxImage:rotate(Im,-300,{A,B}),
                          BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                      end;
 
-              right ->case Nev of
-                        null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),
+              right ->case Nav of
+                        null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,600,{A,B}),% if direction is not left, rotate the image
                           BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                         _->  Im = wxBitmap:convertToImage(BmpCar2b), Im2 = wxImage:rotate(Im,600,{A,B}),
                           BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                       end;
 
-              up ->case Nev of
-                     null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),
+              up ->case Nav of
+                     null-> Im = wxBitmap:convertToImage(BmpCar2), Im2 = wxImage:rotate(Im,300,{A,B}),% if direction is not left, rotate the image
                        BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                      _-> Im = wxBitmap:convertToImage(BmpCar2b), Im2 = wxImage:rotate(Im,300,{A,B}),
                        BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
@@ -210,27 +209,27 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
               _ -> ets:delete(cars,Key)
             end;
     yellow ->  case D of
-                 left -> case Nev of
+                 left -> case Nav of
                            null-> wxDC:drawBitmap(DI, BmpCar3, {A, B});
                            _->   wxDC:drawBitmap(DI, BmpCar3b, {A, B})
                          end;
 
-                 down ->case Nev of
-                          null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,-300,{A,B}),
+                 down ->case Nav of
+                          null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,-300,{A,B}),% if direction is not left, rotate the image
                             BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                           _-> Im = wxBitmap:convertToImage(BmpCar3b), Im2 = wxImage:rotate(Im,-300,{A,B}),
                             BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                         end;
 
-                 right ->case Nev of
-                           null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,600,{A,B}),
+                 right ->case Nav of
+                           null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,600,{A,B}),% if direction is not left, rotate the image
                              BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                            _->  Im = wxBitmap:convertToImage(BmpCar3b), Im2 = wxImage:rotate(Im,600,{A,B}),
                              BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
                          end;
 
-                 up ->case Nev of
-                        null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),
+                 up ->case Nav of
+                        null-> Im = wxBitmap:convertToImage(BmpCar3), Im2 = wxImage:rotate(Im,300,{A,B}),% if direction is not left, rotate the image
                           BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B});
                         _-> Im = wxBitmap:convertToImage(BmpCar3b), Im2 = wxImage:rotate(Im,300,{A,B}),
                           BitIm = wxBitmap:new(Im2), wxDC:drawBitmap(DI, BitIm, {A, B})
@@ -250,12 +249,12 @@ printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
 
 handle_info(timer, State=#state{frame = Frame}) ->  % refresh screen for graphics
 
-  spawn(main,update_ets,[get(?PC1),?Home]),
+  spawn(main,update_ets,[get(?PC1),?Home]), % spawn update ets functions
   spawn(main,update_ets,[get(?PC2),?Home]),
   spawn(main,update_ets,[get(?PC3),?Home]),
   spawn(main,update_ets,[get(?PC4),?Home]),
 
-  wxWindow:refresh(Frame),
+  wxWindow:refresh(Frame), % refresh screen
   erlang:send_after(?Timer,self(),timer),
   {noreply, State};
 
@@ -263,29 +262,29 @@ handle_info({nodeup,PC},State)->
   io:format("~p nodeup ~n",[PC]),
   {noreply, State};
 
-handle_info({nodedown,PC},State)-> % if a node is down check which PC, move responsibilities to different PC and update monitors
+handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move responsibilities to different PC and update monitors
   io:format("~p nodedown ~n",[PC]),
   case PC of
     ?PC1 -> backup_pc(?PC1,get(?PC2)),
-      rpc:call(get(?PC2),server,update_monitor,[pc_1]),
+      rpc:call(get(?PC2),server,update_monitor,[pc_1]), % update the monitor in the others PCs that node is down
       rpc:call(get(?PC3),server,update_monitor,[pc_1]),
       rpc:call(get(?PC4),server,update_monitor,[pc_1]),
       move_car(?PC1,ets:first(cars))     ;
 
     ?PC2 ->backup_pc(?PC2,get(?PC3)),
-      rpc:call(get(?PC1),server,update_monitor,[pc_2]),
+      rpc:call(get(?PC1),server,update_monitor,[pc_2]),% update the monitor in the others PCs that node is down
       rpc:call(get(?PC3),server,update_monitor,[pc_2]),
       rpc:call(get(?PC4),server,update_monitor,[pc_2]),
       move_car(?PC2,ets:first(cars));
 
     ?PC3 ->backup_pc(?PC3,get(?PC4)),
-      rpc:call(get(?PC2),server,update_monitor,[pc_3]),
+      rpc:call(get(?PC2),server,update_monitor,[pc_3]),% update the monitor in the others PCs that node is down
       rpc:call(get(?PC1),server,update_monitor,[pc_3]),
       rpc:call(get(?PC4),server,update_monitor,[pc_3]),
       move_car(?PC3,ets:first(cars));
 
     ?PC4 ->backup_pc(?PC4,get(?PC1)),
-      rpc:call(get(?PC2),server,update_monitor,[pc_4]),
+      rpc:call(get(?PC2),server,update_monitor,[pc_4]),% update the monitor in the others PCs that node is down
       rpc:call(get(?PC3),server,update_monitor,[pc_4]),
       rpc:call(get(?PC1),server,update_monitor,[pc_4]),
       move_car(?PC4,ets:first(cars))
@@ -366,7 +365,6 @@ createBitMaps() ->         % create bitmap to all images
   wxImage:destroy(Antennac),
 
   TrafficLight = wxImage:new("trafficLight2.png"),
-%  TrafficLight = wxImage:new("trafficLightYellow.png"),
   TrafficLightc = wxImage:scale(TrafficLight,40,50),
   BmpTrafficLight = wxBitmap:new(TrafficLightc),
   wxImage:destroy(TrafficLight),
@@ -397,15 +395,15 @@ createBitMaps() ->         % create bitmap to all images
 update_ets(PC,Home) ->
   List=
     try
-      rpc:call(PC,server,update_car_location,[])
+      rpc:call(PC,server,update_car_location,[]) % call update car location function in server to get list of cars and locations
     catch _:_ -> problem
     end,
-  case List of
-    {ok, List1} -> list_to_ets(List1);
-    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
-      Res = net_adm:ping(PC),
+  case List of 
+    {ok, List1} -> list_to_ets(List1); % if the list returned normally, convert it to ets
+    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),  
+      Res = net_adm:ping(PC), % else, check if relevant pc is connected
       case Res of
-        pong -> rpc:call(PC, erlang, disconnect_node, [Home]);
+        pong -> rpc:call(PC, erlang, disconnect_node, [Home]); % if it is, disconnect it
         _-> ok
       end,
       ok
@@ -425,11 +423,11 @@ del_smoke(Pid) -> wx_object:cast(main,{del_smoke,Pid}).% create delete smoke eve
 % this function checks which PC is down and moves all car from fallen PC to new PC
 move_car(_,'$end_of_table') -> ok;
 move_car(PcDown,Key) ->
-  [{_,Location,Name,Start,Type,Con,PC,Nev}] = ets:lookup(cars,Key),
+  [{_,Location,Name,Start,Type,Con,PC,Nav}] = ets:lookup(cars,Key),
 
   case PcDown of
     ?PC1 -> if
-              PC == ?PC1  -> rpc:call(get(?PC2),server,moved_car,[Name,Type,Start,Location,Con,get(?PC2),Nev]), % call to function in server
+              PC == ?PC1  -> rpc:call(get(?PC2),server,moved_car,[Name,Type,Start,Location,Con,get(?PC2),Nav]), % call to function in server
                 Next = ets:next(cars,Key), % get next car
                 ets:delete(cars,Key), % delete car from ets
                 move_car(PcDown,Next) ; % move next car
@@ -438,7 +436,7 @@ move_car(PcDown,Key) ->
 
     ?PC2 -> if
 
-              PC == ?PC2 -> rpc:call(get(?PC3),server,moved_car,[Name,Type,Start,Location,Con,get(?PC3),Nev]),
+              PC == ?PC2 -> rpc:call(get(?PC3),server,moved_car,[Name,Type,Start,Location,Con,get(?PC3),Nav]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next);
@@ -447,7 +445,7 @@ move_car(PcDown,Key) ->
 
     ?PC3 -> if
 
-              PC == ?PC3 -> rpc:call(get(?PC4),server,moved_car,[Name,Type,Start,Location,Con,get(?PC4),Nev]),
+              PC == ?PC3 -> rpc:call(get(?PC4),server,moved_car,[Name,Type,Start,Location,Con,get(?PC4),Nav]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
@@ -456,7 +454,7 @@ move_car(PcDown,Key) ->
 
     ?PC4 -> if
 
-              PC == ?PC4 -> rpc:call(get(?PC1),server,moved_car,[Name,Type,Start,Location,Con,get(?PC1),Nev]),
+              PC == ?PC4 -> rpc:call(get(?PC1),server,moved_car,[Name,Type,Start,Location,Con,get(?PC1),Nav]),
                 Next = ets:next(cars,Key),
                 ets:delete(cars,Key),
                 move_car(PcDown,Next) ;
@@ -464,19 +462,19 @@ move_car(PcDown,Key) ->
             end
   end.
 
-% this function which PCs are combined
+% this function which PCs are combined with the fallen PC and backs them up 
 backup_pc(PCDown,NewPC) ->
   L = [?PC1,?PC2,?PC3,?PC4],
-  L2 = [PC||PC <-L, get(PC) == PCDown], io:format("~p~n",[L2]),
+  L2 = [PC||PC <-L, get(PC) == PCDown], % make list of all PCs that are combined with the fallen PC 
   Fun = fun(E) -> put(E,NewPC) end,
-  lists:foreach(Fun,L2), ok.
+  lists:foreach(Fun,L2), ok. % combine said PCs with the backup PC
 
 %this function is the navigation system
 main_navigation(X,Y,PC1,_,_,_) ->
-  Result =  check_cars(ets:first(cars)), % check if there is a car that already selected
+  Result =  check_cars(ets:first(cars)), % check if there is a car that was already selected
   case Result of
     null -> %  in case there isn't a car that is already selected, pick the closest car
-       search_close_car(ets:first(cars),{X,Y});
+      search_close_car(ets:first(cars),{X,Y});
 
     % in case there isn't a car that already selected, search a close junction
     Pid -> io:format("Pid was found: ~p~n",[Pid]), Result2 = rpc:call(PC1,server,server_search_close_junc,[X,Y]),
@@ -484,55 +482,55 @@ main_navigation(X,Y,PC1,_,_,_) ->
       case Result2 of
         null -> io:format("error in navigation, cant find close junction");
         Dest ->io:format("Dest was found: ~p~n",[Dest]), [{_,[_,_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Pid), % in case there is a close junction update the car destination
-          rpc:call(PC,server,update_car_nev,[Pid,Dest])
+          rpc:call(PC,server,update_car_nav,[Pid,Dest])
 
       end
   end,
   ok.
 
-
-search_close_car('$end_of_table',_)  -> io:format("error in nev, cant find close car~n");
+% this function checks if there is a close car and if so it changes the navigation element in the ets 
+search_close_car('$end_of_table',_)  -> io:format("error in Nav, cant find close car~n");
 search_close_car(Key,{X,Y}) ->
   Ans = ets:member(cars,Key),
-  if
-    Ans == true -> [{_,[{X2,Y2},_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Key),
+  if % check if car is in ets
+    Ans == true -> [{_,[{X2,Y2},_,_,_,_],_,_,_,_,PC,_}] = ets:lookup(cars,Key), % if so, take its coordinates and PC
       Next = ets:next(cars,Key) ;
-    true-> {X2,Y2} = {0,0} ,Next = ets:first(cars), PC = null,
+    true-> {X2,Y2} = {0,0} ,Next = ets:first(cars), PC = null, % else, start function with first car in ets
       search_close_car(ets:first(cars),{X,Y})
   end,
-  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)),
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % check the distance of the car from the click
   if
-    D =< 70 -> rpc:call(PC,ets,update_element,[cars,Key,[{8,in_process}]]);
-    true -> search_close_car(Next,{X,Y})
+    D =< 70 -> rpc:call(PC,ets,update_element,[cars,Key,[{8,in_process}]]); % if the distance is small enough, call relevant PC to update the nav element in ets
+    true -> search_close_car(Next,{X,Y}) % else, check next car
   end.
 
 %this function check if there is a car that already selected
 check_cars('$end_of_table') -> io:format("there is no car in process ~n"), null;
-check_cars(Key) ->  [{_,[_,_,_,_,_],_,_,_,_,_,Nev}] = ets:lookup(cars,Key),
-  case Nev of
-    in_process -> Key;
-    _-> check_cars(ets:next(cars,Key))
+check_cars(Key) ->  [{_,[_,_,_,_,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Key),
+  case Nav of % check if car has already been selected
+    in_process -> Key; % if so, return its pid
+    _-> check_cars(ets:next(cars,Key)) % else, check next car
   end.
 
 % this function goes over the car ets and checks whether the car processes are still alive
 main_cars_mon('$end_of_table',PC1,PC2,PC3,PC4) -> main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4);
 main_cars_mon(Key,PC1,PC2,PC3,PC4)->
 
-  Ans = ets:member(cars,Key),
+  Ans = ets:member(cars,Key), % check if the car is in ets and get next element in ets
   if
-    Ans == true -> Next = ets:next(cars,Key);
+    Ans == true -> Next = ets:next(cars,Key); 
     true -> Next = ets:first(cars),
       main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4)
   end,
   [{_,_,Name,_,_,_,PC,_}] = ets:lookup(cars,Key),
-  Res =  check_PC(Key,PC,PC1,PC2,PC3,PC4),
+  Res =  check_PC(Key,PC,PC1,PC2,PC3,PC4), % check if car is alive in its PC
   case Res of
-    {_,true} -> main_cars_mon(Next,PC1,PC2,PC3,PC4);
-    {PC,false}->
+    {_,true} -> main_cars_mon(Next,PC1,PC2,PC3,PC4); % if it is, check next car
+    {PC,false}-> % if it isn't, check if the car is still in ets
       timer:sleep(2000),
 
       case ets:member(cars,Key) of
-        true -> rpc:call(PC,server,deleteCar,[Key]),
+        true -> rpc:call(PC,server,deleteCar,[Key]), % if it is, delete it and start a new car
 
           case PC of
             PC1 -> main_search_close_car(ets:first(cars),{1344,93}), rpc:call(PC,server,start_car,[Name,20,[{1344,93},left,r1,yellow,st],PC]);
@@ -541,7 +539,7 @@ main_cars_mon(Key,PC1,PC2,PC3,PC4)->
             PC4 -> main_search_close_car(ets:first(cars),{0,651}), rpc:call(PC,server,start_car,[Name,20,[{0,651},right,r9,grey,st],PC])
           end,
           main_cars_mon(Next,PC1,PC2,PC3,PC4);
-        _ -> main_cars_mon(Next,PC1,PC2,PC3,PC4)
+        _ -> main_cars_mon(Next,PC1,PC2,PC3,PC4) % if it isn't, check next car
       end;
     _ -> main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4)
   end.
