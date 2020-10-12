@@ -11,7 +11,7 @@
 
 %% API
 -export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,
-  traffic_light_sensor/2,car_accident/2,car_monitor/4,car_dev/1]).
+  traffic_light_sensor/2,car_accident/2,car_monitor/4,car_dev/1,sensors_search_close_car/2]).
 
 % this function goes over the car ets and checks if there is another car close to the car
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
@@ -231,19 +231,40 @@ outOfRange(Pid)->
     true -> outOfRange(Pid) % if car is not close to borders, check again
   end.
 
-% this function checks if a traffic light is green and if it is it checks which other traffic lights are in hte junction and calls to another function
+% this function checks if a traffic light is green and if there is a close car, if so it checks which other traffic lights are in the junction and calls to another function
 traffic_light_sensor(KeyList,'$end_of_table') -> traffic_light_sensor(KeyList,ets:first(junction));
 traffic_light_sensor(KeyList,Key) ->
-  [{{R2,J},[{_,_},LightPid]}] =  ets:lookup(junction,Key), % get light road, junction and pid
+  [{{R2,J},[{X,Y},LightPid]}] =  ets:lookup(junction,Key), % get light road, junction and pid
 
   case LightPid of
     nal -> traffic_light_sensor(KeyList,ets:next(junction,Key)); % if there is no traffic light, check next junction
     _-> case sys:get_state(LightPid) of % else, check state of light
-          {green,_} -> L = [{Road,Junc}|| {Road,Junc} <- KeyList, J == Junc, Road /= R2], % if light is green, call function with list of all of the traffic lights of this junction
-            sync_traffic(L), traffic_light:sensor_msg(LightPid,green), timer:sleep(200), traffic_light_sensor(KeyList,ets:next(junction,Key));
+          {green,_} -> case sensors_search_close_car(ets:first(cars),{X,Y,R2}) of % if light is green, check if there is a close car
+                         true -> traffic_light_sensor(KeyList,ets:next(junction,Key)); % if there is not, check next junction
+                         _ ->  L = [{Road,Junc}|| {Road,Junc} <- KeyList, J == Junc, Road /= R2], % if there is a close car, call function with list of all of the traffic lights of this junction
+                           sync_traffic(L), traffic_light:sensor_msg(LightPid,green),
+                           traffic_light_sensor(KeyList,ets:next(junction,Key))
+                       end;
+
           _-> traffic_light_sensor(KeyList,ets:next(junction,Key)) % if the light is not green, check next junction
         end
   end.
+% this function checks if there is a close car and if so return false
+sensors_search_close_car('$end_of_table',_)  -> true;
+sensors_search_close_car(Key,{X,Y,R}) ->
+  Ans = ets:member(cars,Key),
+  if % check if car is in ets
+    Ans == true -> [{_,[{X2,Y2},_,R2,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Key), % if so, take its coordinates
+      Next = ets:next(cars,Key) ;
+    true-> {X2,Y2,R2} = {0,0,0} ,Next = ets:first(cars), % else, start function with first car in ets
+      sensors_search_close_car(ets:first(cars),{X,Y,R})
+  end,
+  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % check the distance of the car from the coordinates
+  if
+    D =< 100, R2 == R  -> false; % if the distance is small enough, return false
+    true -> sensors_search_close_car(Next,{X,Y,R}) % else, check next car
+  end.
+
 
 % this function sends messages to other traffic lights in junction so they turn red
 sync_traffic([]) -> ok;
