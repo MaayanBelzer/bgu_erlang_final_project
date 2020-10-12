@@ -79,7 +79,7 @@ init([]) ->
   rpc:call(?PC1,server,start_car,[f,20,[{1344,93},left,r1,yellow,st],?PC1]),
   rpc:call(?PC1,server,start_car,[a,10,[{874,0},down,r18,grey,st],?PC1]),
   rpc:call(?PC2,server,start_car,[e,10,[{101,0},down,r2,yellow,st],?PC2]),
-  rpc:call(?PC2,server,start_car,[g,10,[{0,417},right,r3,red,st],?PC2]),
+  rpc:call(?PC2,server,start_car,[g,20,[{0,417},right,r3,red,st],?PC2]),
   rpc:call(?PC3,server,start_car,[b,20,[{0,651},right,r9,grey,st],?PC3]),
   rpc:call(?PC3,server,start_car,[c,10,[{405,890},up,r14,grey,st],?PC3]),
   rpc:call(?PC3,server,start_car,[d,20,[{623,890},up,r4,red,st],?PC3]),
@@ -108,10 +108,10 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) -> % when le
 
 handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) -> % when the right click was pressed, activate a function that returns the color of the light that was pressed
   if
-    X >= 780, Y =< 472 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
-    X >= 780, Y >= 472 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
-    X =< 780, Y =< 472 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
-    X =< 780, Y >= 472 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
+    X >= 780, Y =< 490 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
+    X >= 780, Y >= 490 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
+    X =< 780, Y =< 490 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
+    X =< 780, Y >= 490 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
     true -> error
   end,
   {noreply,State}.
@@ -147,9 +147,9 @@ printCars('$end_of_table',_,_,_,_,_,_,_) -> ok; % this function paints all of th
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
   [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
-  case Type of 
+  case Type of
     red -> case D of
-             left -> case Nav of 
+             left -> case Nav of
                        null-> wxDC:drawBitmap(DI, BmpCar1, {A, B}); % if car navigation status is null, print the original color
                        _->   wxDC:drawBitmap(DI, BmpCar1b, {A, B}) % if car is navigating, print blue color
                      end;
@@ -398,9 +398,9 @@ update_ets(PC,Home) ->
       rpc:call(PC,server,update_car_location,[]) % call update car location function in server to get list of cars and locations
     catch _:_ -> problem
     end,
-  case List of 
+  case List of
     {ok, List1} -> list_to_ets(List1); % if the list returned normally, convert it to ets
-    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),  
+    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
       Res = net_adm:ping(PC), % else, check if relevant pc is connected
       case Res of
         pong -> rpc:call(PC, erlang, disconnect_node, [Home]); % if it is, disconnect it
@@ -518,7 +518,7 @@ main_cars_mon(Key,PC1,PC2,PC3,PC4)->
 
   Ans = ets:member(cars,Key), % check if the car is in ets and get next element in ets
   if
-    Ans == true -> Next = ets:next(cars,Key); 
+    Ans == true -> Next = ets:next(cars,Key);
     true -> Next = ets:first(cars),
       main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4)
   end,
