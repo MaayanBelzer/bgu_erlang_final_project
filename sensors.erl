@@ -198,31 +198,31 @@ far_from_car(Who,Other_car) ->
 outOfRange(Pid)->
   [{_,[{X,Y},Dir,R,Type,Turn],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
   Dx = X - 780, % check distance from borders of different PCs
-  Dy = Y - 490,
+  Dy = Y - 470,
   if % check if the car is close enough to borders of PC, if it is, send event to car to change PC according to coordinates
 
-    X >= 780,Y =< 490, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 780,Y =< 470, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_2),
       outOfRange(Pid);
-    X >= 780,Y =< 490, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
+    X >= 780,Y =< 470, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_4),
       outOfRange(Pid);
 
-    X =< 780,Y =< 490 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
+    X =< 780,Y =< 470 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_1),
       outOfRange(Pid);
-    X =< 780,Y =< 490 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
+    X =< 780,Y =< 470 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_3),
       outOfRange(Pid);
 
-    X =< 780,Y >= 490,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
+    X =< 780,Y >= 470,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_3,pc_2),
       outOfRange(Pid);
 
-    X >= 780,Y >= 490,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 780,Y >= 470,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_3),
       outOfRange(Pid);
-    X >= 780,Y >= 490,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
+    X >= 780,Y >= 470,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_1),
       outOfRange(Pid);
 
@@ -399,10 +399,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                    E = lists:nth(rand:uniform(3),[yellow,red,grey]),
                                    NewStart = [{X,Y},Dir,Road,E,st],
                                    if
-                                     X >= 780, Y =< 490 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 780, Y >= 490 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y =< 490 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y >= 490 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y =< 470 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y >= 470 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y =< 470 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y >= 470 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;
@@ -416,10 +416,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {accident,Name,_,Start,Speed} ->  % if there was an accident, start a new car where the old one started
                                    [{X,Y},_,_,_,_]  = Start,
                                    if
-                                     X >= 780, Y =< 490 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 780, Y >= 490 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y =< 490 ->rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y >= 490 ->rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y =< 470 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y >= 470 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y =< 470 ->rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y >= 470 ->rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;

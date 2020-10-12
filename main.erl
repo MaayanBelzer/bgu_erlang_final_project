@@ -108,10 +108,10 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) -> % when le
 
 handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) -> % when the right click was pressed, activate a function that returns the color of the light that was pressed
   if
-    X >= 780, Y =< 490 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
-    X >= 780, Y >= 490 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
-    X =< 780, Y =< 490 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
-    X =< 780, Y >= 490 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
+    X >= 780, Y =< 470 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
+    X >= 780, Y >= 470 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
+    X =< 780, Y =< 470 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
+    X =< 780, Y >= 470 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
     true -> error
   end,
   {noreply,State}.
@@ -462,10 +462,10 @@ move_car(PcDown,Key) ->
             end
   end.
 
-% this function which PCs are combined with the fallen PC and backs them up 
+% this function which PCs are combined with the fallen PC and backs them up
 backup_pc(PCDown,NewPC) ->
   L = [?PC1,?PC2,?PC3,?PC4],
-  L2 = [PC||PC <-L, get(PC) == PCDown], % make list of all PCs that are combined with the fallen PC 
+  L2 = [PC||PC <-L, get(PC) == PCDown], % make list of all PCs that are combined with the fallen PC
   Fun = fun(E) -> put(E,NewPC) end,
   lists:foreach(Fun,L2), ok. % combine said PCs with the backup PC
 
@@ -488,7 +488,7 @@ main_navigation(X,Y,PC1,_,_,_) ->
   end,
   ok.
 
-% this function checks if there is a close car and if so it changes the navigation element in the ets 
+% this function checks if there is a close car and if so it changes the navigation element in the ets
 search_close_car('$end_of_table',_)  -> io:format("error in Nav, cant find close car~n");
 search_close_car(Key,{X,Y}) ->
   Ans = ets:member(cars,Key),
