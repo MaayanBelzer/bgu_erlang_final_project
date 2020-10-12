@@ -11,7 +11,7 @@
 
 %% API
 -export([close_to_car/2,close_to_junction/2,far_from_car/2,outOfRange/1,
-  traffic_light_sensor/2,car_accident/2,car_monitor/4,car_dev/1,sensors_search_close_car/2]).
+  traffic_light_sensor/2,car_accident/2,car_monitor/4,car_dev/1]).
 
 % this function goes over the car ets and checks if there is another car close to the car
 close_to_car(Pid,'$end_of_table') -> close_to_car(Pid,ets:first(cars));
@@ -36,7 +36,7 @@ close_to_car(Pid,FirstKey) ->
                _-> close_to_car(Pid,ets:first(cars))
              end;
     _ ->  case Dir1 of % if the cars are in the same direction calculate the distance, if they're close send event to car, else, check next car
-            left -> case abs(Y-Y2)=<20  of
+            left -> case abs(Y-Y2)=<16  of
                       false -> case ets:member(cars,P2) of
                                  true -> close_to_car(Pid,ets:next(cars,P2));
                                  _-> close_to_car(Pid,ets:first(cars))
@@ -51,7 +51,7 @@ close_to_car(Pid,FirstKey) ->
                                                end
                                      end
                     end;
-            right -> case abs(Y-Y2)=<20 of
+            right -> case abs(Y-Y2)=<16 of
                        false -> case ets:member(cars,P2) of
                                   true -> close_to_car(Pid,ets:next(cars,P2));
                                   _-> close_to_car(Pid,ets:first(cars))
@@ -66,7 +66,7 @@ close_to_car(Pid,FirstKey) ->
                                                 end
                                       end
                      end;
-            up -> case abs(X-X2)=<20  of
+            up -> case abs(X-X2)=<16  of
                     false -> case ets:member(cars,P2) of
                                true -> close_to_car(Pid,ets:next(cars,P2));
                                _-> close_to_car(Pid,ets:first(cars))
@@ -81,7 +81,7 @@ close_to_car(Pid,FirstKey) ->
                                              end
                                    end
                   end;
-            down -> case abs(X-X2)=<20 of
+            down -> case abs(X-X2)=<16 of
                       false -> case ets:member(cars,P2) of
                                  true -> close_to_car(Pid,ets:next(cars,P2));
                                  _-> close_to_car(Pid,ets:first(cars))
@@ -198,31 +198,31 @@ far_from_car(Who,Other_car) ->
 outOfRange(Pid)->
   [{_,[{X,Y},Dir,R,Type,Turn],_,_,_,_,_,_}] = ets:lookup(cars,Pid), % get car info
   Dx = X - 780, % check distance from borders of different PCs
-  Dy = Y - 470,
+  Dy = Y - 472,
   if % check if the car is close enough to borders of PC, if it is, send event to car to change PC according to coordinates
 
-    X >= 780,Y =< 470, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 780,Y =< 472, Dir == left, Dx =< 1 ->  ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_2),
       outOfRange(Pid);
-    X >= 780,Y =< 470, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
+    X >= 780,Y =< 472, Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_1,pc_4),
       outOfRange(Pid);
 
-    X =< 780,Y =< 470 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
+    X =< 780,Y =< 472 , Dir == right, Dx >= -1 -> ets:update_element(cars,Pid,[{2,[{X + 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_1),
       outOfRange(Pid);
-    X =< 780,Y =< 470 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
+    X =< 780,Y =< 472 , Dir == down, Dy >= -1 ->ets:update_element(cars,Pid,[{2,[{X,Y + 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_2,pc_3),
       outOfRange(Pid);
 
-    X =< 780,Y >= 470,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
+    X =< 780,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X,Y - 2 },Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_3,pc_2),
       outOfRange(Pid);
 
-    X >= 780,Y >= 470,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
+    X >= 780,Y >= 472,  Dir == left, Dx =< 1 -> ets:update_element(cars,Pid,[{2,[{X - 2,Y},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_3),
       outOfRange(Pid);
-    X >= 780,Y >= 470,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
+    X >= 780,Y >= 472,  Dir == up,   Dy =< 1 -> ets:update_element(cars,Pid,[{2,[{X ,Y - 2},Dir,R,Type,Turn]}]),
       cars:switch_comp(Pid,pc_4,pc_1),
       outOfRange(Pid);
 
@@ -231,40 +231,19 @@ outOfRange(Pid)->
     true -> outOfRange(Pid) % if car is not close to borders, check again
   end.
 
-% this function checks if a traffic light is green and if there is a close car, if so it checks which other traffic lights are in the junction and calls to another function
+% this function checks if a traffic light is green and if it is it checks which other traffic lights are in hte junction and calls to another function
 traffic_light_sensor(KeyList,'$end_of_table') -> traffic_light_sensor(KeyList,ets:first(junction));
 traffic_light_sensor(KeyList,Key) ->
-  [{{R2,J},[{X,Y},LightPid]}] =  ets:lookup(junction,Key), % get light road, junction and pid
+  [{{R2,J},[{_,_},LightPid]}] =  ets:lookup(junction,Key), % get light road, junction and pid
 
   case LightPid of
     nal -> traffic_light_sensor(KeyList,ets:next(junction,Key)); % if there is no traffic light, check next junction
     _-> case sys:get_state(LightPid) of % else, check state of light
-          {green,_} -> case sensors_search_close_car(ets:first(cars),{X,Y,R2}) of % if light is green, check if there is a close car
-                         true -> traffic_light_sensor(KeyList,ets:next(junction,Key)); % if there is not, check next junction
-                         _ ->  L = [{Road,Junc}|| {Road,Junc} <- KeyList, J == Junc, Road /= R2], % if there is a close car, call function with list of all of the traffic lights of this junction
-                           sync_traffic(L), traffic_light:sensor_msg(LightPid,green),
-                           traffic_light_sensor(KeyList,ets:next(junction,Key))
-                       end;
-
+          {green,_} -> L = [{Road,Junc}|| {Road,Junc} <- KeyList, J == Junc, Road /= R2], % if light is green, call function with list of all of the traffic lights of this junction
+            sync_traffic(L), traffic_light:sensor_msg(LightPid,green), timer:sleep(200), traffic_light_sensor(KeyList,ets:next(junction,Key));
           _-> traffic_light_sensor(KeyList,ets:next(junction,Key)) % if the light is not green, check next junction
         end
   end.
-% this function checks if there is a close car and if so return false
-sensors_search_close_car('$end_of_table',_)  -> true;
-sensors_search_close_car(Key,{X,Y,R}) ->
-  Ans = ets:member(cars,Key),
-  if % check if car is in ets
-    Ans == true -> [{_,[{X2,Y2},_,R2,_,_],_,_,_,_,_,_}] = ets:lookup(cars,Key), % if so, take its coordinates
-      Next = ets:next(cars,Key) ;
-    true-> {X2,Y2,R2} = {0,0,0} ,Next = ets:first(cars), % else, start function with first car in ets
-      sensors_search_close_car(ets:first(cars),{X,Y,R})
-  end,
-  D = math:sqrt(math:pow(X-X2,2) + math:pow(Y-Y2,2)), % check the distance of the car from the coordinates
-  if
-    D =< 250, R2 == R  -> false; % if the distance is small enough, return false
-    true -> sensors_search_close_car(Next,{X,Y,R}) % else, check next car
-  end.
-
 
 % this function sends messages to other traffic lights in junction so they turn red
 sync_traffic([]) -> ok;
@@ -399,10 +378,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                    E = lists:nth(rand:uniform(3),[yellow,red,grey]),
                                    NewStart = [{X,Y},Dir,Road,E,st],
                                    if
-                                     X >= 780, Y =< 470 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 780, Y >= 470 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y =< 470 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y >= 470 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y =< 472 -> rpc:call(PC1,server,start_car,[Name,Speed,NewStart,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y >= 472 -> rpc:call(PC4,server,start_car,[Name,Speed,NewStart,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y =< 472 -> rpc:call(PC2,server,start_car,[Name,Speed,NewStart,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y >= 472 -> rpc:call(PC3,server,start_car,[Name,Speed,NewStart,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;
@@ -416,10 +395,10 @@ car_monitor(PC1,PC2,PC3,PC4) ->
                                  {accident,Name,_,Start,Speed} ->  % if there was an accident, start a new car where the old one started
                                    [{X,Y},_,_,_,_]  = Start,
                                    if
-                                     X >= 780, Y =< 470 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X >= 780, Y >= 470 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y =< 470 ->rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
-                                     X =< 780, Y >= 470 ->rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y =< 472 ->rpc:call(PC1,server,start_car,[Name,Speed,Start,PC1]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X >= 780, Y >= 472 ->rpc:call(PC4,server,start_car,[Name,Speed,Start,PC4]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y =< 472 ->rpc:call(PC2,server,start_car,[Name,Speed,Start,PC2]),car_monitor(PC1,PC2,PC3,PC4);
+                                     X =< 780, Y >= 472 ->rpc:call(PC3,server,start_car,[Name,Speed,Start,PC3]),car_monitor(PC1,PC2,PC3,PC4);
                                      true -> io:format("Error")
 
                                    end;
