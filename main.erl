@@ -108,10 +108,10 @@ handle_event(#wx{event = #wxMouse{type=left_down, x=X, y=Y}},State) -> % when le
 
 handle_event(#wx{event = #wxMouse{type=right_down, x=X, y=Y}},State) -> % when the right click was pressed, activate a function that returns the color of the light that was pressed
   if
-    X >= 780, Y =< 472 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
-    X >= 780, Y >= 472 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
-    X =< 780, Y =< 472 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
-    X =< 780, Y >= 472 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
+    X >= 780, Y =< 545 -> rpc:call(get(?PC1),server,print_light,[X,Y]);
+    X >= 780, Y >= 545 -> rpc:call(get(?PC4),server,print_light,[X,Y]);
+    X =< 780, Y =< 545 -> rpc:call(get(?PC2),server,print_light,[X,Y]);
+    X =< 780, Y >= 545 -> rpc:call(get(?PC3),server,print_light,[X,Y]);
     true -> error
   end,
   {noreply,State}.
