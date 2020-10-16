@@ -21,7 +21,7 @@
 -define(Timer,67).
 
 -define(SERVER, ?MODULE).
--record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpCar3,bmpAntenna,bmpTrafficLight ,bmpTrafficLightGreen ,bmpTrafficLightRed ,bmpCommTower,key,bmpsmoke,bmpCar1b,bmpCar2b,
+-record(state, {frame, panel, dc, paint, list,bmpRmap,bmpCar1,bmpCar2,bmpCar3,bmpCommTower,key,bmpsmoke,bmpCar1b,bmpCar2b,
   bmpCar3b}).
 %%%-------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ init([]) ->
   DC=wxPaintDC:new(Panel),
   Paint = wxBufferedPaintDC:new(Panel),
   % create bitmap to all images
-  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower,BmpSmoke,BmpCar1b,BmpCar2b,BmpCar3b}=createBitMaps(),
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpCommTower,BmpSmoke,BmpCar1b,BmpCar2b,BmpCar3b}=createBitMaps(),
 
 
   % connect panel
@@ -90,7 +90,7 @@ init([]) ->
 
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpRmap = BmpRmap,bmpCar1 =BmpCar1 ,bmpCar2 = BmpCar2,
-    bmpCar3 = BmpCar3,bmpAntenna = BmpAntenna,bmpTrafficLight = BmpTrafficLight,bmpTrafficLightGreen = BmpTrafficLightGreen,bmpTrafficLightRed = BmpTrafficLightRed,bmpCommTower = BmpCommTower, bmpsmoke= BmpSmoke
+    bmpCar3 = BmpCar3,bmpCommTower = BmpCommTower, bmpsmoke= BmpSmoke
     ,bmpCar1b =BmpCar1b ,bmpCar2b = BmpCar2b,
     bmpCar3b = BmpCar3b}}.
 
@@ -147,9 +147,9 @@ printCars('$end_of_table',_,_,_,_,_,_,_) -> ok; % this function paints all of th
 printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
   [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Key),
   DI =wxClientDC:new(Panel),
-  case Type of 
+  case Type of
     red -> case D of
-             left -> case Nav of 
+             left -> case Nav of
                        null-> wxDC:drawBitmap(DI, BmpCar1, {A, B}); % if car navigation status is null, print the original color
                        _->   wxDC:drawBitmap(DI, BmpCar1b, {A, B}) % if car is navigating, print blue color
                      end;
@@ -356,39 +356,14 @@ createBitMaps() ->         % create bitmap to all images
   BmpSmoke = wxBitmap:new(Smokec),
   wxImage:destroy(Smoke),
   wxImage:destroy(Smokec),
-
-
-  Antenna = wxImage:new("antenna.png"),
-  Antennac = wxImage:scale(Antenna,40,50),
-  BmpAntenna = wxBitmap:new(Antennac),
-  wxImage:destroy(Antenna),
-  wxImage:destroy(Antennac),
-
-  TrafficLight = wxImage:new("trafficLight2.png"),
-  TrafficLightc = wxImage:scale(TrafficLight,40,50),
-  BmpTrafficLight = wxBitmap:new(TrafficLightc),
-  wxImage:destroy(TrafficLight),
-  wxImage:destroy(TrafficLightc),
-
-  TrafficLightG = wxImage:new("trafficLightGreen.png"),
-  TrafficLightcG = wxImage:scale(TrafficLightG,40,50),
-  BmpTrafficLightGreen = wxBitmap:new(TrafficLightcG),
-  wxImage:destroy(TrafficLightG),
-  wxImage:destroy(TrafficLightcG),
-
-  TrafficLightR = wxImage:new("trafficLightRed.png"),
-  TrafficLightcR = wxImage:scale(TrafficLightR,40,50),
-  BmpTrafficLightRed = wxBitmap:new(TrafficLightcR),
-  wxImage:destroy(TrafficLightR),
-  wxImage:destroy(TrafficLightcR),
-
+  
   CommTower = wxImage:new("comm.png"),
   CommTowerc = wxImage:scale(CommTower,40,50),
   BmpCommTower = wxBitmap:new(CommTowerc),
   wxImage:destroy(CommTower),
   wxImage:destroy(CommTowerc),
 
-  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpAntenna,BmpTrafficLight,BmpTrafficLightGreen,BmpTrafficLightRed,BmpCommTower,BmpSmoke,BmpCar1b,BmpCar2b,BmpCar3b}.
+  {BmpRmap,BmpCar1,BmpCar2,BmpCar3,BmpCommTower,BmpSmoke,BmpCar1b,BmpCar2b,BmpCar3b}.
 
 
 % this function requests the ets from each server and calls to function to update ets
@@ -398,9 +373,9 @@ update_ets(PC,Home) ->
       rpc:call(PC,server,update_car_location,[]) % call update car location function in server to get list of cars and locations
     catch _:_ -> problem
     end,
-  case List of 
+  case List of
     {ok, List1} -> list_to_ets(List1); % if the list returned normally, convert it to ets
-    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),  
+    Else-> io:format("there is a problem~n"),io:format("~p~n",[Else]),
       Res = net_adm:ping(PC), % else, check if relevant pc is connected
       case Res of
         pong -> rpc:call(PC, erlang, disconnect_node, [Home]); % if it is, disconnect it
@@ -462,10 +437,10 @@ move_car(PcDown,Key) ->
             end
   end.
 
-% this function which PCs are combined with the fallen PC and backs them up 
+% this function which PCs are combined with the fallen PC and backs them up
 backup_pc(PCDown,NewPC) ->
   L = [?PC1,?PC2,?PC3,?PC4],
-  L2 = [PC||PC <-L, get(PC) == PCDown], % make list of all PCs that are combined with the fallen PC 
+  L2 = [PC||PC <-L, get(PC) == PCDown], % make list of all PCs that are combined with the fallen PC
   Fun = fun(E) -> put(E,NewPC) end,
   lists:foreach(Fun,L2), ok. % combine said PCs with the backup PC
 
@@ -488,7 +463,7 @@ main_navigation(X,Y,PC1,_,_,_) ->
   end,
   ok.
 
-% this function checks if there is a close car and if so it changes the navigation element in the ets 
+% this function checks if there is a close car and if so it changes the navigation element in the ets
 search_close_car('$end_of_table',_)  -> io:format("error in Nav, cant find close car~n");
 search_close_car(Key,{X,Y}) ->
   Ans = ets:member(cars,Key),
@@ -518,7 +493,7 @@ main_cars_mon(Key,PC1,PC2,PC3,PC4)->
 
   Ans = ets:member(cars,Key), % check if the car is in ets and get next element in ets
   if
-    Ans == true -> Next = ets:next(cars,Key); 
+    Ans == true -> Next = ets:next(cars,Key);
     true -> Next = ets:first(cars),
       main_cars_mon(ets:first(cars),PC1,PC2,PC3,PC4)
   end,
