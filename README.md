@@ -134,7 +134,6 @@ c(main).
 </br>
 main:start().
 
-</br>
 ### Video simulation
 you can watch a video simulation by clicking <a href="https://www.youtube.com/watch?v=urWqO2UGCSs&feature=youtu.be">here</a>.
 
